@@ -1,5 +1,6 @@
 CC=g++
 CFLAGS=-Wall
+LIBS=-lspacy
 DEBUG_TOOL=gdb
 LEAK_TOOL=valgrind
 LEAK_FLAGS=--leak_check=full
@@ -12,24 +13,28 @@ all: client service
 all_c: client service clean
 
 client: client.o
-	$(CC) $(CFLAGS) client.o -o $(CLIENT_OUT)
+	$(CC) $(CFLAGS) searchman_client.o -o $(CLIENT_OUT)
 
 service: service.o
-	$(CC) $(CFLAGS) service.o -o $(SERIVCE_OUT)
+	$(CC) $(CFLAGS) searchman_service.o -o $(SERIVCE_OUT)
 
 
 # Objects
-client.o: client.cpp
-	$(CC) $(CFLAGS) -o client.cpp client
+client.o: searchman_client.cpp
+	$(CC) $(CFLAGS) $(LIBS) -c searchman_client.cpp
 
-service.o: service.cpp
-	$(CC) $(CFLAGS) service.cpp -o service
+service.o: searchman_service.cpp
+	$(CC) $(CFLAGS) $(LIBS) -c searchman_service.cpp
 
 
 # Utils
 clean:
-	rm *.o
-	rm *.vgcore
+	rm -f *.o
+	rm -f *.vgcore
+
+clean_all:	clean
+	rm -f $(SERIVCE_OUT)
+	rm -f $(CLIENT_OUT)
 
 
 # Debugging
