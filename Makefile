@@ -1,31 +1,27 @@
 CC=g++
-CFLAGS=-Wall
-LIBS=-lspacy
+CFLAGS=-Wall -I/usr/local/include -I/usr/local/lib
+LIBS=-L/usr/local/lib -lcpr
 DEBUG_TOOL=gdb
 LEAK_TOOL=valgrind
 LEAK_FLAGS=--leak_check=full
-CLIENT_OUT=searchman
-SERIVCE_OUT=searchman_service
+CLIENT_OUT=searchman_client
+SERVICE_OUT=searchman_service
 
-# Building
+# Build targets
 all: client service
 
-all_c: client service clean
+client: searchman_client.o
+	$(CC) $(CFLAGS) searchman_client.o $(LIBS) -o $(CLIENT_OUT)
 
-client: client.o
-	$(CC) $(CFLAGS) searchman_client.o -o $(CLIENT_OUT)
+service: searchman_service.o
+	$(CC) $(CFLAGS) searchman_service.o $(LIBS) -o $(SERVICE_OUT)
 
-service: service.o
-	$(CC) $(CFLAGS) searchman_service.o -o $(SERIVCE_OUT)
+# Object files
+searchman_client.o: searchman_client.cpp
+	$(CC) $(CFLAGS) -c searchman_client.cpp
 
-
-# Objects
-client.o: searchman_client.cpp
-	$(CC) $(CFLAGS) $(LIBS) -c searchman_client.cpp
-
-service.o: searchman_service.cpp
-	$(CC) $(CFLAGS) $(LIBS) -c searchman_service.cpp
-
+searchman_service.o: searchman_service.cpp
+	$(CC) $(CFLAGS) -c searchman_service.cpp
 
 # Utils
 clean:
@@ -33,7 +29,7 @@ clean:
 	rm -f *.vgcore
 
 clean_all:	clean
-	rm -f $(SERIVCE_OUT)
+	rm -f $(SERVICE_OUT)
 	rm -f $(CLIENT_OUT)
 
 

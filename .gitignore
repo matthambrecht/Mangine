@@ -32,3 +32,7 @@
 *.app
 searchman
 searchman_service
+
+# Development
+.vscode
+embedding/venv
