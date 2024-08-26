@@ -1,7 +1,8 @@
 #!/bin/bash
 
+PORT=$(cat config.json | jq -r ".endpoint.port")
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 
 cd "$SCRIPT_DIR"
 source venv/bin/activate
-uvicorn endpoint:app --port 30998 --log-config=log_conf.yaml --reload
+uvicorn endpoint:app --port $PORT --log-config=log_conf.yaml --reload 2>&1 logs.txt

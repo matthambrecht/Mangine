@@ -5,6 +5,8 @@
 #include <string>
 #include <vector>
 #include <cpr/cpr.h>
+
+#include "../utils/Config.h"
 #include "../utils/json.hpp"
 
 class Request {
@@ -16,5 +18,6 @@ public:
 private:
     std::string * _endpoint;
     int _vector_size;
+    Config _config = Config();
 };
 #endif

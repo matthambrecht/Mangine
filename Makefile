@@ -1,11 +1,13 @@
 CC=g++
-CFLAGS=-Wall -I/usr/local/include -I/usr/local/lib
+CFLAGS=-Wall -I/usr/local/include -I/usr/local/lib -I./
 LIBS=-L/usr/local/lib -lcpr
+TEST_LIBS=$(LIBS) -lgtest -lgtest_main -pthread
 DEBUG_TOOL=gdb
 LEAK_TOOL=valgrind
 LEAK_FLAGS=--leak_check=full
 CLIENT_OUT=searchman_client
 SERVICE_OUT=searchman_service
+TEST_OUT=rungt
 
 # Build targets
 all: client service
@@ -16,12 +18,18 @@ client: searchman_client.o
 service: searchman_service.o
 	$(CC) $(CFLAGS) searchman_service.o $(LIBS) -o $(SERVICE_OUT)
 
-# Object files
-searchman_client.o: searchman_client.cpp
-	$(CC) $(CFLAGS) -c searchman_client.cpp
+test: test.o
+	$(CC) $(CFLAGS) test.o $(TEST_LIBS) -o $(TEST_OUT)
 
-searchman_service.o: searchman_service.cpp
-	$(CC) $(CFLAGS) -c searchman_service.cpp
+# Object files
+searchman_client.o: processes/searchman_client.cpp
+	$(CC) $(CFLAGS) -c processes/searchman_client.cpp
+
+searchman_service.o: processes/searchman_service.cpp
+	$(CC) $(CFLAGS) -c processes/searchman_service.cpp
+
+test.o: test/test.cpp
+	$(CC) $(CFLAGS) -c test/test.cpp
 
 # Utils
 clean:
@@ -31,6 +39,7 @@ clean:
 clean_all:	clean
 	rm -f $(SERVICE_OUT)
 	rm -f $(CLIENT_OUT)
+	rm -f $(TEST_OUT)
 
 
 # Debugging

@@ -1,0 +1,10 @@
+{
+    "endpoint": {
+        "host": "127.0.0.1",
+        "port": "30998",
+        "vector_len": 96
+    },
+    "service": {
+        "command_buffer_size": 2097152
+    }
+}
