@@ -1,4 +1,5 @@
 CC=g++
+SHELL=/bin/bash
 CFLAGS=-Wall -I/usr/local/include -I/usr/local/lib -I./
 LIBS=-L/usr/local/lib -lcpr
 TEST_LIBS=$(LIBS) -lgtest -lgtest_main -pthread
@@ -8,9 +9,11 @@ LEAK_FLAGS=--leak_check=full
 CLIENT_OUT=searchman_client
 SERVICE_OUT=searchman_service
 TEST_OUT=rungt
+INSTALL_SCRIPT=bin/install.sh
+UNINSTALL_SCRIPT=bin/uninstall.sh
 
 # Build targets
-all: client service
+all: client service test
 
 client: searchman_client.o
 	$(CC) $(CFLAGS) searchman_client.o $(LIBS) -o $(CLIENT_OUT)
@@ -56,3 +59,11 @@ service_leak:
 
 client_leak:
 	$(LEAK_TOOL) $(LEAK_FLAGS) ./$(CLIENT_OUT)
+
+# Utilities
+install:
+	$(SHELL) ./$(INSTALL_SCRIPT)
+
+uninstall:
+	$(SHELL) ./$(UNINSTALL_SCRIPT)
+	

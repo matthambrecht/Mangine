@@ -55,10 +55,10 @@ embedding_install () {
 install_requirements () {
     mkdir install
 
-    # package_install
-    # embedding_install
-    # cpr_install
-    # json_install
+    package_install
+    embedding_install
+    cpr_install
+    json_install
     gtest_install
 }
 

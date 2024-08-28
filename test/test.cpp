@@ -3,8 +3,11 @@
 #include <sys/types.h>
 #include <iostream>
 #include <string>
+#include <vector>
+#include <unistd.h>
 
 #include "utils/Config.cpp"
+#include "indexer/Man.cpp"
 #include "service/Request.cpp"
 
 // Config Tests
@@ -48,12 +51,44 @@ TEST (RequestTest, BadInput) { // Empty input
         );
 }
 
+// Manpage Tests
+TEST (ManTest, GetAllTest) {
+    Man man = Man();
+
+    std::vector<std::string> command_list = man.getAllCommands();
+    ASSERT_GT(command_list.size(), 1);
+}
+
+TEST (ManTest, GetManTest) {
+    Man man = Man();
+    std::string test_command = "cat";
+    std::vector<std::string> command_list = man.getAllCommands();
+
+    for (std::vector<std::string>::iterator it = command_list.begin(); it != command_list.begin() + 10; it++) {
+        ASSERT_GT(man.getCommandMan(*it).size(), 0);
+    }
+}
+
+// Chunking Tests
+TEST (ChunkTest, GetChunkTest) {
+    Man man;
+    std::string test_command = "cat";
+    std::vector<Chunk> chunk_list;
+
+    chunk_list = man.getCommandChunks(test_command, man.getCommandMan(test_command));
+    
+    ASSERT_EQ(chunk_list.size(), 9);
+}
+
+
+
 int main(int argc, char **argv) {
     pid_t child = fork();
 
     if (child == 0) {
         execl("/bin/bash", "sh", "embedding/entrypoint.sh", nullptr);
     } else if (child > 0) {
+        sleep(5);
         testing::InitGoogleTest(&argc, argv);
         int retval = RUN_ALL_TESTS();
         kill(child, SIGKILL);
