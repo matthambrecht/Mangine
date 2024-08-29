@@ -5,10 +5,12 @@
 #include <string>
 #include <vector>
 #include <unistd.h>
+#include <fcntl.h>
 
 #include "utils/Config.cpp"
 #include "indexer/Man.cpp"
 #include "service/Request.cpp"
+#include "database/Database.cpp"
 
 // Config Tests
 TEST (ConfigTest, NormalCase) { // Confirm config works properly
@@ -72,26 +74,43 @@ TEST (ManTest, GetManTest) {
 // Chunking Tests
 TEST (ChunkTest, GetChunkTest) {
     Man man;
-    std::string test_command = "cat";
+    Config config;
+    std::string test_command = "tail";
     std::vector<Chunk> chunk_list;
+    int chunk_size = config._config["embedding"]["chunk_size"].get<int>(); 
+    std::string man_str = man.getCommandMan(test_command);
 
-    chunk_list = man.getCommandChunks(test_command, man.getCommandMan(test_command));
+    chunk_list = man.getCommandChunks(test_command, man_str);
     
-    ASSERT_EQ(chunk_list.size(), 9);
+    ASSERT_EQ(chunk_list.size(), (int)(man_str.size() / chunk_size) + 1);
 }
 
+// Database Tests
+TEST (DatabaseTest, InitDatabaseTest) {
+    Database database;
+}
 
 
 int main(int argc, char **argv) {
     pid_t child = fork();
 
     if (child == 0) {
+        int devNull = open("/dev/null", O_WRONLY);
+
+        dup2(devNull, STDOUT_FILENO);
+        dup2(devNull, STDERR_FILENO);
+        close(devNull);
+
         execl("/bin/bash", "sh", "embedding/entrypoint.sh", nullptr);
+
+        return 0;
     } else if (child > 0) {
+        std::cout << "Waiting for test embedding server to start..." << std::endl;
         sleep(5);
         testing::InitGoogleTest(&argc, argv);
         int retval = RUN_ALL_TESTS();
         kill(child, SIGKILL);
+
         return retval;
     } else {
         std::cout << "Failed to initiate child process..." << std::endl;

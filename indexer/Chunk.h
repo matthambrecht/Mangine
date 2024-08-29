@@ -10,6 +10,9 @@
 class Chunk {
 public:
     Chunk(std::string command, std::string chunk_val, std::vector<double> embedding);
+    std::vector<double> getEmbedding();
+    std::string getCommand();
+    std::string getVal();
 private:
     std::string _command;
     std::string _chunk_val;

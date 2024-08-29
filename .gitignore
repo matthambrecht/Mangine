@@ -32,7 +32,13 @@
 *.app
 searchman
 searchman_service
+rungt
 
 # Development
 .vscode
 embedding/venv
+embedding/__pycache__
+
+# Library Files
+install/
+utils/

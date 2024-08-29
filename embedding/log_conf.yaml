@@ -1,18 +1,23 @@
 version: 1
+disable_existing_loggers: False
 formatters:
-  simple:
-    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+  default:
+    format: "%(levelprefix)s %(message)s"
 handlers:
-  console:
+  default:
     class: logging.StreamHandler
-    level: DEBUG
-    formatter: simple
+    formatter: default
     stream: ext://sys.stdout
 loggers:
-  simpleExample:
-    level: DEBUG
-    handlers: [console]
-    propagate: no
+  uvicorn:
+    handlers: [default]
+    level: INFO
+  uvicorn.error:
+    handlers: [default]
+    level: INFO
+  uvicorn.access:
+    handlers: [default]
+    level: WARNING 
 root:
-  level: DEBUG
-  handlers: [console]
+  handlers: [default]
+  level: INFO
