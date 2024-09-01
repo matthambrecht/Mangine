@@ -1,10 +1,14 @@
 #!/bin/bash
 
 START_DIR=$(pwd)
+DB_NAME=$(cat config.json | jq -r ".database.db_name")
+DB_USER=$(cat config.json | jq -r ".database.db_user")
+DB_PASS=$(cat config.json | jq -r ".database.db_pass")
 
 # Installs google test for unit testing
 gtest_install () {
     cd install
+
     git clone https://github.com/google/googletest.git -b v1.15.2
     cd googletest        
     mkdir build 
@@ -12,6 +16,7 @@ gtest_install () {
     cmake ..  
     make
     sudo make install
+
     cd $START_DIR 
 }
 
@@ -30,6 +35,7 @@ cpr_install () {
     cmake .. -DCPR_USE_SYSTEM_CURL=ON
     cmake --build . --parallel
     sudo cmake --install .
+
     cd $START_DIR
 }
 
@@ -52,6 +58,7 @@ embedding_install () {
 # Installs the PostgreSQL libs
 db_install () {
     cd install
+
     sudo apt-get -y install postgresql-15 postgresql-server-dev-15
 
     # Install pgvector lib
@@ -79,8 +86,14 @@ db_install () {
     cd $START_DIR
 }
 
+postgres_setup() {
+    sudo -u postgres psql -c "CREATE ROLE ${DB_USER} WITH SUPERUSER LOGIN PASSWORD '${DB_PASS}';"
+    sudo -u postgres psql -c "CREATE DATABASE ${DB_NAME}"
+    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE ${DB_NAME} TO ${DB_USER}"
+}
+
 install_requirements () {
-    mkdir install
+    mkdir -p install
 
     package_install
     embedding_install
@@ -88,6 +101,7 @@ install_requirements () {
     json_install
     gtest_install
     db_install
+    postgres_setup
 }
 
 install_requirements

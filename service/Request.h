@@ -8,16 +8,21 @@
 
 #include "../utils/Config.h"
 #include "../utils/json.hpp"
+#include "../utils/Log.h"
 
 class Request {
 public:
     Request();
-    Request(std::string endpoint, int vector_size);
+    Request(const Log& log, const Config& config);
+    Request(const std::string& endpoint, const int vector_size, const Log& log, const Config& config);
     ~Request();
-    std::vector<double> getEmbedding(std::string);
+    std::vector<double> getEmbedding(const std::string& query);
 private:
+    const std::string CLASS_NAME = "Request";
+
     std::string * _endpoint;
     int _vector_size;
-    Config _config = Config();
+    Log _log;
+    Config _config;
 };
 #endif

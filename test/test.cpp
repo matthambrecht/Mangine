@@ -7,10 +7,20 @@
 #include <unistd.h>
 #include <fcntl.h>
 
+#include "utils/Log.cpp"
 #include "utils/Config.cpp"
 #include "indexer/Man.cpp"
 #include "service/Request.cpp"
 #include "database/Database.cpp"
+
+// Log Tests
+TEST (LogTest, All) {
+    Log log;
+
+    ASSERT_NO_THROW(log.error("Test", "Error"));
+    ASSERT_NO_THROW(log.warning("Test", "Warning"));
+    ASSERT_NO_THROW(log.normal("Test", "Normal"));
+}
 
 // Config Tests
 TEST (ConfigTest, NormalCase) { // Confirm config works properly
@@ -25,8 +35,10 @@ TEST (ConfigTest, NormalCase) { // Confirm config works properly
 
 // Request Tests
 TEST (RequestTest, NormalCase) { // Ensure valid vector is returned
-    Request endpoint = Request();
+    Log log;
     Config config;
+    Request endpoint = Request(log, config);
+
     int vector_len = config._config["endpoint"]["vector_len"].get<int>();
 
     ASSERT_EQ(
@@ -36,7 +48,9 @@ TEST (RequestTest, NormalCase) { // Ensure valid vector is returned
 }
 
 TEST (RequestTest, BadEndpoint) { // Improper endpoint in config
-    Request endpoint = Request();
+    Log log;
+    Config config; 
+    Request endpoint = Request(log, config);
     
     ASSERT_THROW(
         endpoint.getEmbedding(""),
@@ -45,7 +59,9 @@ TEST (RequestTest, BadEndpoint) { // Improper endpoint in config
 }
 
 TEST (RequestTest, BadInput) { // Empty input
-    Request endpoint = Request("http://127.0.0.1:30998/embed", 96);
+    Log log;
+    Config config;
+    Request endpoint = Request("http://127.0.0.1:30998/embed", 96, log, config);
     
     ASSERT_THROW(
         endpoint.getEmbedding(""),
@@ -55,26 +71,32 @@ TEST (RequestTest, BadInput) { // Empty input
 
 // Manpage Tests
 TEST (ManTest, GetAllTest) {
-    Man man = Man();
+    Log log;
+    Config config;
+    Man man(log, config);
 
     std::vector<std::string> command_list = man.getAllCommands();
     ASSERT_GT(command_list.size(), 1);
 }
 
 TEST (ManTest, GetManTest) {
-    Man man = Man();
-    std::string test_command = "cat";
+    Log log;
+    Config config;
+    Man man(log, config);
+
     std::vector<std::string> command_list = man.getAllCommands();
 
-    for (std::vector<std::string>::iterator it = command_list.begin(); it != command_list.begin() + 10; it++) {
+    for (std::vector<std::string>::iterator it = command_list.begin(); it != command_list.begin() + 10; ++it) {
         ASSERT_GT(man.getCommandMan(*it).size(), 0);
     }
 }
 
 // Chunking Tests
 TEST (ChunkTest, GetChunkTest) {
-    Man man;
+    Log log;
     Config config;
+    Man man(log, config);
+
     std::string test_command = "tail";
     std::vector<Chunk> chunk_list;
     int chunk_size = config._config["embedding"]["chunk_size"].get<int>(); 
@@ -86,10 +108,24 @@ TEST (ChunkTest, GetChunkTest) {
 }
 
 // Database Tests
-TEST (DatabaseTest, InitDatabaseTest) {
-    Database database;
+TEST (DatabaseTest, ConnectDatabaseTest) {
+    Log log;
+    Config config;
+    Database * database = new Database(log, config);
+
+    delete database;
 }
 
+TEST (DatabaseTest, InitResetTest) {
+    Log log;
+    Config config;
+    Database * database = new Database(log, config);
+
+    ASSERT_NO_THROW(database->init());
+    ASSERT_NO_THROW(database->reset());
+
+    delete database;
+}
 
 int main(int argc, char **argv) {
     pid_t child = fork();
@@ -105,7 +141,7 @@ int main(int argc, char **argv) {
 
         return 0;
     } else if (child > 0) {
-        std::cout << "Waiting for test embedding server to start..." << std::endl;
+        std::cout << "Starting embedding server...\n";
         sleep(5);
         testing::InitGoogleTest(&argc, argv);
         int retval = RUN_ALL_TESTS();
@@ -113,7 +149,7 @@ int main(int argc, char **argv) {
 
         return retval;
     } else {
-        std::cout << "Failed to initiate child process..." << std::endl;
+        std::cout << "Failed to initiate child process...\n";
         return -1;
     }
 }

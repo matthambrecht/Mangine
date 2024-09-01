@@ -1,9 +1,5 @@
 #include "Man.h"
 
-Man::Man() {
-    _config = Config();
-}
-
 // Gets the list of all executable commands with manpages (Sec. 1)
 std::vector<std::string> Man::getAllCommands() {
     int buffer_size = 256;
@@ -15,7 +11,9 @@ std::vector<std::string> Man::getAllCommands() {
 
     // Check for pipe health
     if (!pipe) {
-        throw std::runtime_error("Failed to open stdout pipe()");
+        const std::string error_msg = "Failed to open stdout pipe()";
+        _log.error(CLASS_NAME, error_msg);
+        throw std::runtime_error(error_msg);
     }
 
     // Run the command and get stdout
@@ -24,8 +22,10 @@ std::vector<std::string> Man::getAllCommands() {
             command_result += stdout_buffer;
         }
     } catch (...) {
+        const std::string error_msg = "Issue reading from stdout pipe()";
         pclose(pipe);
-        throw;
+        _log.error(CLASS_NAME, error_msg);
+        throw std::runtime_error(error_msg);
     }
 
     // Parse command lines out of stdout
@@ -43,7 +43,9 @@ std::vector<std::string> Man::getAllCommands() {
             command_vector.push_back(command_delimited); 
         }
     } else {
-        throw std::ios_base::failure("Failed to recieve `man` command output");
+        const std::string error_msg = "Failed to recieve `man` command output";
+        _log.error(CLASS_NAME, error_msg);
+        throw std::ios_base::failure(error_msg);
     }
 
     pclose(pipe);
@@ -52,7 +54,7 @@ std::vector<std::string> Man::getAllCommands() {
 }
 
 // Gets manpage output for a command
-std::string Man::getCommandMan(std::string command) {
+std::string Man::getCommandMan(const std::string& command) {
     int buffer_size = 256;
     char stdout_buffer[buffer_size];
     std::vector<std::string> command_vector;
@@ -62,7 +64,9 @@ std::string Man::getCommandMan(std::string command) {
 
     // Check for pipe health
     if (!pipe) {
-        throw std::runtime_error("Failed to open stdout pipe()");
+        const std::string error_msg = "Failed to open stdout pipe()";
+        _log.error(CLASS_NAME, error_msg);
+        throw std::runtime_error(error_msg);
     }
 
     // Run the command and get stdout
@@ -71,8 +75,10 @@ std::string Man::getCommandMan(std::string command) {
             command_result += stdout_buffer;
         }
     } catch (...) {
+        const std::string error_msg = "Issue reading from stdout pipe()";
         pclose(pipe);
-        throw;
+        _log.error(CLASS_NAME, error_msg);
+        throw std::runtime_error(error_msg);
     }
 
     pclose(pipe);
@@ -80,7 +86,7 @@ std::string Man::getCommandMan(std::string command) {
     return command_result;
 }
 
-std::vector<Chunk> Man::getCommandChunks(std::string command, std::string man_contents) {
+std::vector<Chunk> Man::getCommandChunks(const std::string& command, const std::string& man_contents) {
     std::vector<Chunk> man_chunks;
     int chunk_size = _config._config["embedding"]["chunk_size"].get<int>();
 

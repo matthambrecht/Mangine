@@ -9,5 +9,10 @@
     },
     "embedding": {
         "chunk_size": 256
+    },
+    "database": {
+        "db_name": "embeddings",
+        "db_user": "searchman",
+        "db_pass": "searchman"
     }
 }
