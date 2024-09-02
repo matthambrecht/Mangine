@@ -20,7 +20,6 @@ void Indexer::chunker() {
     std::vector<Chunk> chunks;
     std::vector<std::string> chunk_strs;
     std::vector<pgvector::Vector> embeddings;
-    int counter = 10;
 
     _log.normal(CLASS_NAME, "Chunking all manpages...");
 
@@ -43,13 +42,9 @@ void Indexer::chunker() {
             command_chunks.end(),
             std::back_inserter(chunk_strs),
             [](const Chunk& chunk) { return chunk.getVal(); });
-
-        if (counter-- == 0) {
-            break;
-        }
     }
 
-    _log.normal(CLASS_NAME, "Completed chunking.");
+    _log.normal(CLASS_NAME, "Completed chunking, recieved " + std::to_string(chunks.size()) + " chunks.");
     batch_embed(chunks, chunk_strs);
 }
 
@@ -60,6 +55,12 @@ void Indexer::batch_embed(std::vector<Chunk>& chunks, std::vector<std::string> c
 
     for (int idx = 0; idx < (int)chunks.size(); idx++) {
         chunks.at(idx).setEmbedding(embeddings.at(idx));
+    }
+
+    if (chunks.size() != embeddings.size()) {
+        std::string error_msg = "Not all chunks were embedded due to some internal error.";
+        _log.error(CLASS_NAME, error_msg);
+        throw std::runtime_error(error_msg);
     }
 
     _log.normal(CLASS_NAME, "Completed batch embeddings.");

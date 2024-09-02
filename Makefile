@@ -12,6 +12,8 @@ TEST_OUT=rungt
 INSTALL_SCRIPT=bin/install.sh
 UNINSTALL_SCRIPT=bin/uninstall.sh
 
+$(source .env)
+
 # Build targets
 all: client service test
 

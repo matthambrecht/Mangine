@@ -62,6 +62,7 @@ Request::~Request() {
     };
 
     // Curl response for endpoint
+    _log.normal(CLASS_NAME, "Sending a single embedding request.");
     cpr::Response response = cpr::Post(
         cpr::Url{*_normal_endpoint},
         cpr::Header{
@@ -83,6 +84,7 @@ Request::~Request() {
         throw std::domain_error(error_msg);
     } else { // Handle embeddings returned
         nlohmann::json response_json = nlohmann::json::parse(response.text);
+        _log.normal(CLASS_NAME, "Recieved a single embedding response.");
 
         if (response_json.contains("embedding")&& response_json["embedding"].is_array()) {
             embedding_vector = response_json["embedding"].get<std::vector<float>>();
@@ -105,6 +107,7 @@ std::vector<pgvector::Vector> Request::getEmbeddingBatch(const std::vector<std::
     };
 
      // Curl response for endpoint
+     _log.normal(CLASS_NAME, "Sending batch embedding request with " + std::to_string(query_batch.size()) + " queries.");
     cpr::Response response = cpr::Post(
         cpr::Url{*_batch_endpoint},
         cpr::Header{
@@ -126,6 +129,7 @@ std::vector<pgvector::Vector> Request::getEmbeddingBatch(const std::vector<std::
         throw std::domain_error(error_msg);
     } else {
         nlohmann::json response_json = nlohmann::json::parse(response.text);
+        _log.normal(CLASS_NAME, "Recieved a batch embedding response.");
 
         if (response_json.contains("embedding_batch")&& response_json["embedding_batch"].is_array()) {
             for (const auto& embedding : response_json["embedding_batch"]) { // Parse individual embeddings

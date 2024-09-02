@@ -1,14 +1,15 @@
 {
     "endpoint": {
         "host": "127.0.0.1",
-        "port": "3017",
+        "port": "3212",
         "vector_len": 300
     },
     "service": {
         "command_buffer_size": 2097152
     },
     "embedding": {
-        "chunk_size": 256
+        "chunk_size": 256,
+        "max_chunks": 15
     },
     "database": {
         "db_name": "embeddings",

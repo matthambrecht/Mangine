@@ -49,7 +49,8 @@ std::vector<std::string> Man::getAllCommands() {
     }
 
     pclose(pipe);
-
+    _log.normal(CLASS_NAME, "Retrieved " + std::to_string(command_vector.size()) + " commands.");
+    
     return command_vector;
 }
 
@@ -58,7 +59,7 @@ std::string Man::getCommandMan(const std::string& command) {
     int buffer_size = 256;
     char stdout_buffer[buffer_size];
     std::vector<std::string> command_vector;
-    std::string man_command = "man " + command + " | cat 2>/dev/null";
+    std::string man_command = "man " + command + " 2>/dev/null | col -b";
     std::string command_result = "";
     FILE * pipe = popen(man_command.c_str(), "r");
 
@@ -71,8 +72,13 @@ std::string Man::getCommandMan(const std::string& command) {
 
     // Run the command and get stdout
     try {
+        int counter = 0;
         while(fgets(stdout_buffer, sizeof stdout_buffer, pipe) != NULL) {
             command_result += stdout_buffer;
+
+            if (counter++ >= _max_chunks) {
+                break;
+            }
         }
     } catch (...) {
         const std::string error_msg = "Issue reading from stdout pipe()";

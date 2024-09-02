@@ -1,11 +1,11 @@
-from fastapi import FastAPI, Request
-from pydantic import BaseModel
-from starlette.middleware.base import BaseHTTPMiddleware
 import asyncio
-
+import functools
 import spacy
 import logging
 
+from fastapi import FastAPI, Request
+from pydantic import BaseModel
+from starlette.middleware.base import BaseHTTPMiddleware
 
 class RequestLoggerMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
@@ -24,7 +24,6 @@ app = FastAPI()
 nlp = spacy.load("en_core_web_md")
 # app.add_middleware(RequestLoggerMiddleware)
 
-
 class EmbeddingRequest(BaseModel):
     query: str
 
@@ -35,6 +34,8 @@ class BatchEmbeddingRequest(BaseModel):
 
 async def pipeline(query):
     embedding = nlp(query).vector.tolist()
+    
+    logging.info(f"Embedded [{', '.join([f'{x}' for x in embedding[:10]])}, ...]")
 
     return embedding
 
@@ -54,7 +55,7 @@ async def get_embedding(request: EmbeddingRequest):
 @app.post("/embed_batch")
 async def get_embedding_batch(request: BatchEmbeddingRequest):
     queries = request.query_batch
-
+    
     if not queries:
         return {"Error": "Input batch not provided."}
 
