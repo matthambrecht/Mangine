@@ -1,6 +1,6 @@
 #include "Indexer.h"
 
-void Indexer::index_all() {
+void Indexer::indexAll() {
     _log.normal(CLASS_NAME, "Beginning indexing all manpages...");
 
     // Get all commands and manpages
@@ -20,32 +20,43 @@ void Indexer::chunker() {
     std::vector<Chunk> chunks;
     std::vector<std::string> chunk_strs;
     std::vector<pgvector::Vector> embeddings;
-
+    std::unordered_set<std::string> known_commands = _database->getAllCommands();
+    std::vector<std::string> system_commands = man.getAllCommands();
+    int size = 0;
     _log.normal(CLASS_NAME, "Chunking all manpages...");
 
     // Get and chunk all of the command manpage contents
-    for (const auto& command : man.getAllCommands()) {
-        std::vector<Chunk> command_chunks = man.getCommandChunks(
-            command,
-            man.getCommandMan(command)
-        );
+    for (const auto& command : system_commands) {
+        if (size++ > 15) {
+            break;
+        }
 
-        // Add chunks and contents to respective vectors
-        chunks.reserve(chunks.size() + command_chunks.size());
-        chunk_strs.reserve(chunk_strs.size() + command_chunks.size());
-        std::copy(
-            command_chunks.begin(),
-            command_chunks.end(),
-            std::back_inserter(chunks));
-        std::transform(
-            command_chunks.begin(),
-            command_chunks.end(),
-            std::back_inserter(chunk_strs),
-            [](const Chunk& chunk) { return chunk.getVal(); });
+        if (known_commands.find(command) == nullptr) { // Ensure we don't waste time trying to insert existing commands
+            _database->insertCommand(command);
+            std::vector<Chunk> command_chunks = man.getCommandChunks(
+                command,
+                man.getCommandMan(command)
+            );
+
+            // Add chunks and contents to respective vectors
+            chunks.reserve(chunks.size() + command_chunks.size());
+            chunk_strs.reserve(chunk_strs.size() + command_chunks.size());
+            std::copy(
+                command_chunks.begin(),
+                command_chunks.end(),
+                std::back_inserter(chunks));
+            std::transform(
+                command_chunks.begin(),
+                command_chunks.end(),
+                std::back_inserter(chunk_strs),
+                [](const Chunk& chunk) { return chunk.getVal(); });
+        }
     }
 
     _log.normal(CLASS_NAME, "Completed chunking, recieved " + std::to_string(chunks.size()) + " chunks.");
-    batch_embed(chunks, chunk_strs);
+
+    if (chunks.size()) 
+        batch_embed(chunks, chunk_strs);
 }
 
 void Indexer::batch_embed(std::vector<Chunk>& chunks, std::vector<std::string> chunk_strs) {

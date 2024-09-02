@@ -49,7 +49,7 @@ std::vector<std::string> Man::getAllCommands() {
     }
 
     pclose(pipe);
-    _log.normal(CLASS_NAME, "Retrieved " + std::to_string(command_vector.size()) + " commands.");
+    _log.normal(CLASS_NAME, "Retrieved " + std::to_string(command_vector.size()) + " commands from system.");
     
     return command_vector;
 }

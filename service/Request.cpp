@@ -55,8 +55,6 @@ Request::~Request() {
  pgvector::Vector Request::getEmbedding(const std::string& query) { // Handle embedding of single string
     std::vector<float> embedding_vector;
 
-    _log.normal(CLASS_NAME, "Sending query to be embedded...");
-
     nlohmann::json payload = {
         {"query", query},
     };

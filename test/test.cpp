@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <pgvector/pqxx.hpp>
+#include <unordered_set>
 
 #include "utils/Log.cpp"
 #include "utils/Config.cpp"
@@ -150,27 +151,89 @@ TEST (DatabaseTest, InitResetTest) { // Check to see if we can make and remove t
     ASSERT_NO_THROW(database.reset());
 }
 
+TEST (DatabaseTest, InsertCommandsTest) { // Make sure that we can insert and retrieve commands
+    Log log;
+    Config config;
+    Database database = Database(log, config);
+    std::vector<std::string> test_commands = {
+        "test1",
+        "test2",
+        "test3"
+    };
+    std::unordered_set<std::string> test_output;
+
+    database.init();
+
+    // Insert test commands into database
+    for (std::vector<std::string>::iterator it = test_commands.begin(); it != test_commands.end(); ++it) {
+        ASSERT_NO_THROW(database.insertCommand(*it));
+    }
+
+    test_output = database.getAllCommands();
+    ASSERT_EQ(test_output.size(), test_commands.size());
+
+    // Check if all commands are in set
+    for (std::vector<std::string>::iterator it = test_commands.begin(); it != test_commands.end(); ++it) {
+        ASSERT_EQ(*test_output.find(*it), *it);
+    }
+
+    database.reset();
+}
+
+TEST (DatabaseTest, InsertChunksTest) {
+    Log log;
+    Config config;
+    Request endpoint = Request(log, config);
+
+    Database database = Database(log, config);
+    pgvector::Vector test_embedding = endpoint.getEmbedding("Hello world");
+    std::vector<Chunk> test_commands = {
+        Chunk("test1", "Hello world", test_embedding),
+        Chunk("test2", "Hello world", test_embedding),
+        Chunk("test3", "Hello world", test_embedding)
+    };
+
+    database.init();
+
+    // Insert test commands into database
+    for (std::vector<Chunk>::iterator it = test_commands.begin(); it != test_commands.end(); ++it) {
+        ASSERT_NO_THROW(database.insertChunk(*it));
+    }
+
+    database.reset();
+}
+
+
 // Indexer Tests
-TEST (IndexerTest, ConstructorTest) {
+TEST (IndexerTest, ConstructorTest) { // Ensure that indexer object can be created
     Log log = Log();
     Config config = Config();
     Database * database = new Database(log, config);
     Request * embedder = new Request(log, config);
 
+    database->init();
+
     ASSERT_NO_THROW(Indexer(log, config, database, embedder));
+
+    database->reset();
 
     delete database;
     delete embedder;
 }
 
-TEST (IndexerTest, IndexAllTest) {
+TEST (IndexerTest, IndexAllTest) { // Attempt to index all commands
     Log log = Log();
     Config config = Config();
     Database * database = new Database(log, config);
     Request * embedder = new Request(log, config);
 
+    database->init();
+
     Indexer * indexer = new Indexer(log, config, database, embedder);
-    ASSERT_NO_THROW(indexer->index_all());
+    ASSERT_NO_THROW(indexer->indexAll()); // Normal case
+    ASSERT_NO_THROW(indexer->indexAll()); // Edge case (should get 0)
+
+    database->reset();
 
     delete database;
     delete embedder;

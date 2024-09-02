@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <unordered_set>
 
 class Indexer {
 public:
@@ -13,7 +14,7 @@ public:
         Database* database,
         Request* request
         ) : _log(log), _config(config), _database(database), _request(request) {};
-    void index_all();
+    void indexAll();
     void chunker();
     void batch_embed(std::vector<Chunk>& chunks, std::vector<std::string> chunk_strs);
 private:

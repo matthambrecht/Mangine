@@ -3,6 +3,7 @@
 
 #include <pgvector/pqxx.hpp>
 #include <pqxx/pqxx>
+#include <unordered_set>
 
 #include "../utils/Log.h"
 #include "../utils/Config.h"
@@ -14,14 +15,15 @@ public:
     ~Database();
     void init();
     void reset();
+    void insertCommand(const std::string& command);
+    void insertChunk(const Chunk& chunk);
+    std::unordered_set<std::string> getAllCommands();
 private:
     const std::string CLASS_NAME = "Database";
 
     Log _log;
     Config _config;
     pqxx::connection * _conn;
-
-    void send(const std::string& query);
 };
 
 #endif
