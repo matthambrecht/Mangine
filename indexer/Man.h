@@ -9,9 +9,7 @@
 
 #include "../utils/json.hpp"
 #include "Chunk.cpp"
-#include "../service/Request.h"
-#include "../utils/Log.h"
-#include "../utils/Config.h"
+#include "../embedding/Pipeline.h"
 
 class Man {
 public:

@@ -7,9 +7,7 @@
 #include <cpr/cpr.h>
 #include <pgvector/pqxx.hpp>
 
-#include "../utils/Config.h"
 #include "../utils/json.hpp"
-#include "../utils/Log.h"
 
 class Request {
 public:

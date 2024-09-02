@@ -15,6 +15,7 @@
 #include "service/Request.cpp"
 #include "database/Database.cpp"
 #include "indexer/Indexer.cpp"
+#include "embedding/Pipeline.cpp"
 
 // Log Tests
 TEST (LogTest, All) { // Check if logging messages workes properly
@@ -24,6 +25,7 @@ TEST (LogTest, All) { // Check if logging messages workes properly
     ASSERT_NO_THROW(log.warning("Test", "Warning"));
     ASSERT_NO_THROW(log.normal("Test", "Normal"));
 }
+
 
 // Config Tests
 TEST (ConfigTest, NormalCase) { // Confirm config works properly
@@ -36,6 +38,20 @@ TEST (ConfigTest, NormalCase) { // Confirm config works properly
     ASSERT_TRUE(config._config["service"]["ports"].is_null());
 }
 
+
+// Pipeline Tests
+TEST (PipelineTest, CleanseTest) { // Confirm that the pipeline cleans up the string as expected
+    Pipeline pipeline;
+    std::string test_string = "\ttest that. &*))██\nhello world!  ";
+    std::string expected_out = "test that hello world";
+
+    pipeline.run(test_string);
+
+    ASSERT_EQ(test_string, expected_out);
+}
+
+
+
 // Request Tests
 TEST (RequestTest, ConstructorTest) { // Ensure We Can Make Request Objects
     Log log;
@@ -44,10 +60,11 @@ TEST (RequestTest, ConstructorTest) { // Ensure We Can Make Request Objects
     ASSERT_NO_THROW(Request(log, config));
 }
 
+
 TEST (RequestTest, NormalCase) { // Ensure valid vector is returned
     Log log;
     Config config;
-    Request endpoint = Request(log, config);
+    Request endpoint(log, config);
     int vector_len = config._config["endpoint"]["vector_len"].get<int>();
 
     ASSERT_EQ(
@@ -56,10 +73,11 @@ TEST (RequestTest, NormalCase) { // Ensure valid vector is returned
         );
 }
 
+
 TEST (RequestTest, BadEndpoint) { // Improper endpoint in config
     Log log;
     Config config; 
-    Request endpoint = Request(log, config);
+    Request endpoint(log, config);
     
     ASSERT_THROW(
         endpoint.getEmbedding(""),
@@ -67,10 +85,11 @@ TEST (RequestTest, BadEndpoint) { // Improper endpoint in config
         );
 }
 
+
 TEST (RequestTest, BatchEmbedTest) { // Test batch embeddings
     Log log;
     Config config; 
-    Request endpoint = Request(log, config);
+    Request endpoint(log, config);
     int vector_len = config._config["endpoint"]["vector_len"].get<int>();
     std::vector<std::string> query_batch = {
         "test 1",
@@ -86,6 +105,7 @@ TEST (RequestTest, BatchEmbedTest) { // Test batch embeddings
         ASSERT_EQ((int)(*it).dimensions(), vector_len);
     }
 }
+
 
 // Manpage Tests
 TEST (ManTest, ConstructorTest) { // Ensure we can make Manpage objects
@@ -118,6 +138,7 @@ TEST (ManTest, GetManTest) { // Ensure we can get all of the manpage contents
     }
 }
 
+
 // Chunking Tests
 TEST (ChunkTest, GetChunkTest) { // Check if chunking is working properly
     Log log;
@@ -134,6 +155,7 @@ TEST (ChunkTest, GetChunkTest) { // Check if chunking is working properly
     ASSERT_EQ(chunk_list.size(), (int)(man_str.size() / chunk_size) + 1);
 }
 
+
 // Database Tests
 TEST (DatabaseTest, ConnectDatabaseTest) { // Make sure we can connect to the database
     Log log;
@@ -142,19 +164,21 @@ TEST (DatabaseTest, ConnectDatabaseTest) { // Make sure we can connect to the da
     ASSERT_NO_THROW(Database(log, config));
 }
 
+
 TEST (DatabaseTest, InitResetTest) { // Check to see if we can make and remove tables
     Log log;
     Config config;
-    Database database = Database(log, config);
+    Database database(log, config);
 
     ASSERT_NO_THROW(database.init());
     ASSERT_NO_THROW(database.reset());
 }
 
+
 TEST (DatabaseTest, InsertCommandsTest) { // Make sure that we can insert and retrieve commands
     Log log;
     Config config;
-    Database database = Database(log, config);
+    Database database(log, config);
     std::vector<std::string> test_commands = {
         "test1",
         "test2",
@@ -180,12 +204,12 @@ TEST (DatabaseTest, InsertCommandsTest) { // Make sure that we can insert and re
     database.reset();
 }
 
+
 TEST (DatabaseTest, InsertChunksTest) {
     Log log;
     Config config;
-    Request endpoint = Request(log, config);
-
-    Database database = Database(log, config);
+    Request endpoint(log, config);
+    Database database(log, config);
     pgvector::Vector test_embedding = endpoint.getEmbedding("Hello world");
     std::vector<Chunk> test_commands = {
         Chunk("test1", "Hello world", test_embedding),
@@ -206,39 +230,59 @@ TEST (DatabaseTest, InsertChunksTest) {
 
 // Indexer Tests
 TEST (IndexerTest, ConstructorTest) { // Ensure that indexer object can be created
-    Log log = Log();
-    Config config = Config();
+    Log log;
+    Config config;
     Database * database = new Database(log, config);
     Request * embedder = new Request(log, config);
 
+    database->reset();
     database->init();
 
     ASSERT_NO_THROW(Indexer(log, config, database, embedder));
-
-    database->reset();
 
     delete database;
     delete embedder;
 }
 
+
 TEST (IndexerTest, IndexAllTest) { // Attempt to index all commands
-    Log log = Log();
-    Config config = Config();
+    Log log;
+    Config config;
     Database * database = new Database(log, config);
     Request * embedder = new Request(log, config);
-
-    database->init();
 
     Indexer * indexer = new Indexer(log, config, database, embedder);
     ASSERT_NO_THROW(indexer->indexAll()); // Normal case
     ASSERT_NO_THROW(indexer->indexAll()); // Edge case (should get 0)
 
-    database->reset();
-
     delete database;
     delete embedder;
     delete indexer;
 }
+
+
+// Retrieval Pipeline Tests
+TEST (RetrievalTest, BasicRetrieval) {
+    Log log;
+    Config config;
+    Database * database = new Database(log, config);
+    Request * embedder = new Request(log, config);
+    std::string test_query = "text editor";
+    pgvector::Vector test_embedding = embedder->getEmbedding(test_query);
+    std::vector<Chunk> retrieved_chunks;
+
+    retrieved_chunks = database->retrieve(test_embedding);
+
+    for (const auto& chunk : retrieved_chunks) {
+        std::cout << chunk.getCommand() << std::endl;
+    }
+
+    ASSERT_EQ(retrieved_chunks.size(), 25);
+
+    delete database;
+    delete embedder;
+}
+
 
 int main(int argc, char **argv) {
     pid_t child = fork();

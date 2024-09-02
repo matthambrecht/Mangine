@@ -54,12 +54,13 @@ std::vector<std::string> Man::getAllCommands() {
     return command_vector;
 }
 
+
 // Gets manpage output for a command
 std::string Man::getCommandMan(const std::string& command) {
-    int buffer_size = 256;
+    int buffer_size = 1024;
     char stdout_buffer[buffer_size];
     std::vector<std::string> command_vector;
-    std::string man_command = "man " + command + " 2>/dev/null | col -b";
+    std::string man_command = "info " + command + " 2>/dev/null | col -b";
     std::string command_result = "";
     FILE * pipe = popen(man_command.c_str(), "r");
 
@@ -92,12 +93,16 @@ std::string Man::getCommandMan(const std::string& command) {
     return command_result;
 }
 
+
 std::vector<Chunk> Man::getCommandChunks(const std::string& command, const std::string& man_contents) {
     std::vector<Chunk> man_chunks;
     int chunk_size = _config._config["embedding"]["chunk_size"].get<int>();
+    std::string contents = man_contents;
 
-    for (size_t i = 0; i < man_contents.size(); i += chunk_size) {
-        std::string chunk_content = man_contents.substr(i, chunk_size);
+    Pipeline().run(contents);
+
+    for (size_t i = 0; i < contents.size(); i += chunk_size) {
+        std::string chunk_content = contents.substr(i, chunk_size);
         pgvector::Vector embedding;
 
         man_chunks.push_back(Chunk(command, chunk_content, embedding));

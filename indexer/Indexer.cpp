@@ -22,14 +22,14 @@ void Indexer::chunker() {
     std::vector<pgvector::Vector> embeddings;
     std::unordered_set<std::string> known_commands = _database->getAllCommands();
     std::vector<std::string> system_commands = man.getAllCommands();
-    int size = 0;
+    // int size = 0;
     _log.normal(CLASS_NAME, "Chunking all manpages...");
 
     // Get and chunk all of the command manpage contents
     for (const auto& command : system_commands) {
-        if (size++ > 15) {
-            break;
-        }
+        // if (size++ > 15) {
+        //     break;
+        // }
 
         if (known_commands.find(command) == nullptr) { // Ensure we don't waste time trying to insert existing commands
             _database->insertCommand(command);
@@ -66,6 +66,7 @@ void Indexer::batch_embed(std::vector<Chunk>& chunks, std::vector<std::string> c
 
     for (int idx = 0; idx < (int)chunks.size(); idx++) {
         chunks.at(idx).setEmbedding(embeddings.at(idx));
+        _database->insertChunk(chunks.at(idx));
     }
 
     if (chunks.size() != embeddings.size()) {

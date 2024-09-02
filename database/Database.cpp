@@ -150,12 +150,12 @@ void Database::insertChunk(const Chunk& chunk) {
 
 std::unordered_set<std::string> Database::getAllCommands() {
     std::unordered_set<std::string> commands;
-    pqxx::work transaction(*_conn);
     const std::string query = R"(
         SELECT command FROM mappings;
     )";
 
     try {
+        pqxx::work transaction(*_conn);
         pqxx::result result = transaction.exec(query);
 
         for (int idx = 0; idx < std::size(result); ++idx) {
@@ -170,4 +170,35 @@ std::unordered_set<std::string> Database::getAllCommands() {
     }
 
     return commands;
+}
+
+std::vector<Chunk> Database::retrieve(const pgvector::Vector& query_embeddings, int k_best = 25) {
+    const std::string query = R"(
+            SELECT command, chunk_str, embedding FROM chunks ORDER BY embedding <-> $1 LIMIT $2;
+        )";
+    std::vector<Chunk> k_best_chunks;
+    
+    _log.normal(CLASS_NAME, "Attempting to retrieve " + std::to_string(k_best) + " commands.");
+    try {
+        pqxx::work transaction(*_conn);
+        pqxx::result result{transaction.exec_params(query, query_embeddings, k_best)};
+
+        for (int idx = 0; idx < std::size(result); ++idx) {
+            pgvector::Vector embedding_vector = result[idx][2].as<pgvector::Vector>();
+            k_best_chunks.emplace_back(
+                Chunk(
+                    result[idx][0].as<std::string>(),
+                    result[idx][1].as<std::string>(),
+                    embedding_vector
+            ));
+        }
+
+        _log.normal(CLASS_NAME, "Retrieved " + std::to_string(k_best) + " commands.");
+    } catch (const std::exception& e) {
+        std::string error_msg = "Error retrieving chunks from db: " + std::string(e.what());
+        _log.error(CLASS_NAME, error_msg);
+        throw std::runtime_error(error_msg);
+    }
+
+    return k_best_chunks;
 }

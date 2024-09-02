@@ -18,6 +18,7 @@ public:
     void insertCommand(const std::string& command);
     void insertChunk(const Chunk& chunk);
     std::unordered_set<std::string> getAllCommands();
+    std::vector<Chunk> retrieve(const pgvector::Vector& query_embeddings, int k_best);
 private:
     const std::string CLASS_NAME = "Database";
 

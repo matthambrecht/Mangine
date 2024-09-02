@@ -1,12 +1,12 @@
 {
     "endpoint": {
         "host": "127.0.0.1",
-        "port": "3212",
+        "port": "32343",
         "vector_len": 300
     },
     "embedding": {
-        "chunk_size": 256,
-        "max_chunks": 15
+        "chunk_size": 1024,
+        "max_chunks": 2
     },
     "database": {
         "db_name": "embeddings",
