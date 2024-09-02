@@ -1,6 +1,6 @@
 CC=g++
 SHELL=/bin/bash
-CFLAGS=-Wall -I/usr/local/include -I/usr/local/lib -I./
+CFLAGS=-g -Wall -I/usr/local/include -I/usr/local/lib -I./
 LIBS=-L/usr/local/lib -lcpr -ldl -lpqxx -lpq
 TEST_LIBS=$(LIBS) -lgtest -lgtest_main -pthread
 DEBUG_TOOL=gdb

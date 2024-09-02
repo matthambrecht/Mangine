@@ -1,10 +1,11 @@
-#ifndef REQUEST
-#define REQUEST
+#ifndef REQUEST_H
+#define REQUEST_H
 
 #include <iostream>
 #include <string>
 #include <vector>
 #include <cpr/cpr.h>
+#include <pgvector/pqxx.hpp>
 
 #include "../utils/Config.h"
 #include "../utils/json.hpp"
@@ -14,13 +15,14 @@ class Request {
 public:
     Request();
     Request(const Log& log, const Config& config);
-    Request(const std::string& endpoint, const int vector_size, const Log& log, const Config& config);
     ~Request();
-    std::vector<double> getEmbedding(const std::string& query);
+    pgvector::Vector getEmbedding(const std::string& query);
+    std::vector<pgvector::Vector> getEmbeddingBatch(const std::vector<std::string>& query_batch);
 private:
     const std::string CLASS_NAME = "Request";
 
-    std::string * _endpoint;
+    std::string * _normal_endpoint;
+    std::string * _batch_endpoint;
     int _vector_size;
     Log _log;
     Config _config;

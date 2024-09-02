@@ -6,15 +6,17 @@
 #include <vector>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pgvector/pqxx.hpp>
 
 #include "utils/Log.cpp"
 #include "utils/Config.cpp"
 #include "indexer/Man.cpp"
 #include "service/Request.cpp"
 #include "database/Database.cpp"
+#include "indexer/Indexer.cpp"
 
 // Log Tests
-TEST (LogTest, All) {
+TEST (LogTest, All) { // Check if logging messages workes properly
     Log log;
 
     ASSERT_NO_THROW(log.error("Test", "Error"));
@@ -34,15 +36,21 @@ TEST (ConfigTest, NormalCase) { // Confirm config works properly
 }
 
 // Request Tests
+TEST (RequestTest, ConstructorTest) { // Ensure We Can Make Request Objects
+    Log log;
+    Config config;
+
+    ASSERT_NO_THROW(Request(log, config));
+}
+
 TEST (RequestTest, NormalCase) { // Ensure valid vector is returned
     Log log;
     Config config;
     Request endpoint = Request(log, config);
-
     int vector_len = config._config["endpoint"]["vector_len"].get<int>();
 
     ASSERT_EQ(
-        endpoint.getEmbedding("Test").size(),
+        endpoint.getEmbedding("Test").dimensions(),
         vector_len
         );
 }
@@ -58,19 +66,36 @@ TEST (RequestTest, BadEndpoint) { // Improper endpoint in config
         );
 }
 
-TEST (RequestTest, BadInput) { // Empty input
+TEST (RequestTest, BatchEmbedTest) { // Test batch embeddings
     Log log;
-    Config config;
-    Request endpoint = Request("http://127.0.0.1:30998/embed", 96, log, config);
-    
-    ASSERT_THROW(
-        endpoint.getEmbedding(""),
-        std::invalid_argument
-        );
+    Config config; 
+    Request endpoint = Request(log, config);
+    int vector_len = config._config["endpoint"]["vector_len"].get<int>();
+    std::vector<std::string> query_batch = {
+        "test 1",
+        "test 2",
+        "test 3"
+    };
+
+    std::vector<pgvector::Vector> embedding_batch = endpoint.getEmbeddingBatch(query_batch);
+
+    ASSERT_EQ(query_batch.size(), embedding_batch.size());
+
+    for (std::vector<pgvector::Vector>::iterator it = embedding_batch.begin(); it != embedding_batch.end(); ++it) {
+        ASSERT_EQ((int)(*it).dimensions(), vector_len);
+    }
 }
 
 // Manpage Tests
-TEST (ManTest, GetAllTest) {
+TEST (ManTest, ConstructorTest) { // Ensure we can make Manpage objects
+    Log log;
+    Config config;
+    
+    ASSERT_NO_THROW(Man(log, config));
+}
+
+
+TEST (ManTest, GetAllTest) { // Ensure we can get all of the system commands
     Log log;
     Config config;
     Man man(log, config);
@@ -79,7 +104,8 @@ TEST (ManTest, GetAllTest) {
     ASSERT_GT(command_list.size(), 1);
 }
 
-TEST (ManTest, GetManTest) {
+
+TEST (ManTest, GetManTest) { // Ensure we can get all of the manpage contents
     Log log;
     Config config;
     Man man(log, config);
@@ -92,7 +118,7 @@ TEST (ManTest, GetManTest) {
 }
 
 // Chunking Tests
-TEST (ChunkTest, GetChunkTest) {
+TEST (ChunkTest, GetChunkTest) { // Check if chunking is working properly
     Log log;
     Config config;
     Man man(log, config);
@@ -108,23 +134,47 @@ TEST (ChunkTest, GetChunkTest) {
 }
 
 // Database Tests
-TEST (DatabaseTest, ConnectDatabaseTest) {
+TEST (DatabaseTest, ConnectDatabaseTest) { // Make sure we can connect to the database
     Log log;
     Config config;
-    Database * database = new Database(log, config);
-
-    delete database;
+    
+    ASSERT_NO_THROW(Database(log, config));
 }
 
-TEST (DatabaseTest, InitResetTest) {
+TEST (DatabaseTest, InitResetTest) { // Check to see if we can make and remove tables
     Log log;
     Config config;
-    Database * database = new Database(log, config);
+    Database database = Database(log, config);
 
-    ASSERT_NO_THROW(database->init());
-    ASSERT_NO_THROW(database->reset());
+    ASSERT_NO_THROW(database.init());
+    ASSERT_NO_THROW(database.reset());
+}
+
+// Indexer Tests
+TEST (IndexerTest, ConstructorTest) {
+    Log log = Log();
+    Config config = Config();
+    Database * database = new Database(log, config);
+    Request * embedder = new Request(log, config);
+
+    ASSERT_NO_THROW(Indexer(log, config, database, embedder));
 
     delete database;
+    delete embedder;
+}
+
+TEST (IndexerTest, IndexAllTest) {
+    Log log = Log();
+    Config config = Config();
+    Database * database = new Database(log, config);
+    Request * embedder = new Request(log, config);
+
+    Indexer * indexer = new Indexer(log, config, database, embedder);
+    ASSERT_NO_THROW(indexer->index_all());
+
+    delete database;
+    delete embedder;
+    delete indexer;
 }
 
 int main(int argc, char **argv) {

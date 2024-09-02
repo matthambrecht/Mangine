@@ -45,7 +45,9 @@ Database::Database(const Log& log, const Config& config) : _log(log), _config(co
 
 Database::~Database() {
     if (_conn) {
+        _log.normal(CLASS_NAME, "Disconnecting from database...");
         delete _conn;
+        _conn = nullptr;
     }
 }
 
@@ -80,7 +82,8 @@ void Database::reset() {
 
 void Database::send(const std::string& query) {
     pqxx::work transaction(*_conn);
-    transaction.exec0(query);
-
+    pqxx::result result = transaction.exec0(query);
+    transaction.commit();
+    result.clear();
     _log.normal(CLASS_NAME, "Recieved query");
 }

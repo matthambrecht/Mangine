@@ -1,10 +1,11 @@
-#ifndef MAN
-#define MAN
+#ifndef MAN_H
+#define MAN_H
 
 #include <iostream>
 #include <string>
 #include <fstream>
 #include <vector>
+#include <cstdio>
 
 #include "../utils/json.hpp"
 #include "Chunk.cpp"

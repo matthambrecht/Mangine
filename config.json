@@ -1,7 +1,7 @@
 {
     "endpoint": {
         "host": "127.0.0.1",
-        "port": "30998",
+        "port": "3017",
         "vector_len": 300
     },
     "service": {

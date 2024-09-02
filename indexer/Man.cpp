@@ -92,7 +92,7 @@ std::vector<Chunk> Man::getCommandChunks(const std::string& command, const std::
 
     for (size_t i = 0; i < man_contents.size(); i += chunk_size) {
         std::string chunk_content = man_contents.substr(i, chunk_size);
-        std::vector<double> embedding = Request().getEmbedding(chunk_content);
+        pgvector::Vector embedding;
 
         man_chunks.push_back(Chunk(command, chunk_content, embedding));
     }

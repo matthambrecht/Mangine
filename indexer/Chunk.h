@@ -1,5 +1,5 @@
-#ifndef CHUNK
-#define CHUNK
+#ifndef CHUNK_H
+#define CHUNK_H
 
 #include <iostream>
 #include <fstream>
@@ -9,13 +9,14 @@
 
 class Chunk {
 public:
-    Chunk(std::string command, std::string chunk_val, std::vector<double> embedding);
-    std::vector<double> getEmbedding();
-    std::string getCommand();
-    std::string getVal();
+    Chunk(const std::string& command, const std::string& chunk_val, pgvector::Vector& embedding);
+    pgvector::Vector getEmbedding() const;
+    std::string getCommand() const;
+    std::string getVal() const;
+    void setEmbedding(pgvector::Vector& embedding);
 private:
     std::string _command;
     std::string _chunk_val;
-    std::vector<double> _embedding;
+    pgvector::Vector _embedding;
 };
 #endif
