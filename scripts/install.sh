@@ -1,5 +1,11 @@
 #!/bin/bash
 
+if ! command -v jq 2>&1 >/dev/null
+then
+    sudo apt-get install -y jq
+    exit 1
+fi
+
 START_DIR=$(pwd)
 DB_NAME=$(cat config.json | jq -r ".database.db_name")
 DB_USER=$(cat config.json | jq -r ".database.db_user")
@@ -59,7 +65,7 @@ embedding_install () {
 db_install () {
     cd install
 
-    sudo apt-get -y install postgresql-15 postgresql-server-dev-15
+    sudo apt-get -y install postgresql postgresql-server-dev-all
 
     # Install pgvector lib
     git clone --branch v0.7.3 https://github.com/pgvector/pgvector.git

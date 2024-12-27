@@ -1,7 +1,7 @@
 CC=g++
 SHELL=/bin/bash
 CFLAGS=-g -Wall -I/usr/local/include -I/usr/local/lib -I./
-LIBS=-L/usr/local/lib -lcpr -ldl -lpqxx -lpq
+LIBS=-L/usr/local/lib -lcpr -lpqxx -lpq -ldl -lssl -lcurl -lcrypto
 TEST_LIBS=$(LIBS) -lgtest -lgtest_main -pthread
 DEBUG_TOOL=gdb
 LEAK_TOOL=valgrind
@@ -9,8 +9,8 @@ LEAK_FLAGS=--leak_check=full
 CLIENT_OUT=searchman_client
 SERVICE_OUT=searchman_service
 TEST_OUT=rungt
-INSTALL_SCRIPT=bin/install.sh
-UNINSTALL_SCRIPT=bin/uninstall.sh
+INSTALL_SCRIPT=scripts/install.sh
+UNINSTALL_SCRIPT=scripts/uninstall.sh
 
 $(source .env)
 
