@@ -38,6 +38,7 @@ rungt
 .vscode
 embedding/venv
 embedding/__pycache__
+build/
 
 # Library Files
 install/
