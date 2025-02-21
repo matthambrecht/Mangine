@@ -8,14 +8,15 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(LOCAL_FILES
     tests/unit_tests.cpp
     utils/Log.cpp
-    utils/Config.cpp
     pipeline/Pipeline.cpp
+    indexer/Man.cpp
 )
 set(LOCAL_DIRECTORIES
     tests
     utils
     libs
     pipeline
+    indexer
 )
 # ========================== End Init Stuff =================================
 
@@ -33,6 +34,7 @@ FetchContent_MakeAvailable(gtest)
 
 # ========================== Begin Compilation Stuff ========================
 add_executable(rungt ${LOCAL_FILES})
+add_compile_options(-Wall -Wextra -pedantic -Werror -g)
 target_include_directories(rungt PRIVATE ${LOCAL_DIRECTORIES})
 target_link_libraries(rungt gtest gtest_main)
 # ========================== End Compilation Stuff ==========================

@@ -2,8 +2,7 @@
 
 // Gets the list of all executable commands with manpages (Sec. 1)
 std::vector<std::string> Man::getAllCommands() {
-    int buffer_size = 256;
-    char stdout_buffer[buffer_size];
+    char stdout_buffer[256];
     std::vector<std::string> command_vector;
     std::string command = "apropos -s 1 ''";
     std::string command_result = "";
@@ -57,10 +56,9 @@ std::vector<std::string> Man::getAllCommands() {
 
 // Gets manpage output for a command
 std::string Man::getCommandMan(const std::string& command) {
-    int buffer_size = 1024;
-    char stdout_buffer[buffer_size];
+    char stdout_buffer[1024];
     std::vector<std::string> command_vector;
-    std::string man_command = "info " + command + " 2>/dev/null | col -b";
+    std::string man_command = "info " + command + " 2>/dev/null";
     std::string command_result = "";
     FILE * pipe = popen(man_command.c_str(), "r");
 
@@ -89,23 +87,21 @@ std::string Man::getCommandMan(const std::string& command) {
     }
 
     pclose(pipe);
-
     return command_result;
 }
 
 
 std::vector<Chunk> Man::getCommandChunks(const std::string& command, const std::string& man_contents) {
     std::vector<Chunk> man_chunks;
-    int chunk_size = _config._config["embedding"]["chunk_size"].get<int>();
+    int chunk_size = _config._config["entry_params"]["chunk_size"].get<int>();
     std::string contents = man_contents;
 
     Pipeline().run(contents);
 
     for (size_t i = 0; i < contents.size(); i += chunk_size) {
         std::string chunk_content = contents.substr(i, chunk_size);
-        pgvector::Vector embedding;
 
-        man_chunks.push_back(Chunk(command, chunk_content, embedding));
+        man_chunks.push_back(Chunk(command, chunk_content));
     }
 
     return man_chunks;

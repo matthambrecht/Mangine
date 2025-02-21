@@ -7,17 +7,19 @@
 #include <vector>
 #include <cstdio>
 
-#include "../utils/json.hpp"
-#include "Chunk.cpp"
-#include "../embedding/Pipeline.h"
+#include "Chunk.h"
+#include "../libs/json.hpp"
+#include "../pipeline/Pipeline.h"
+#include "../utils/Config.h"
+#include "../utils/Log.h"
 
 class Man {
 public:
     Man() : _log(Log()), _config(Config()) {
-        _max_chunks = _config._config["embedding"]["max_chunks"].get<int>();
+        _max_chunks = _config._config["entry_params"]["chunk_size"].get<int>();
     };
     Man(Log& log, Config& config) : _log(log), _config(config) {
-        _max_chunks = _config._config["embedding"]["max_chunks"].get<int>();
+        _max_chunks = _config._config["entry_params"]["chunk_size"].get<int>();
     };
     std::vector<std::string> getAllCommands();
     std::string getCommandMan(const std::string& command);

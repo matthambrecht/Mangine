@@ -11,6 +11,8 @@
 #include "../utils/Log.h"
 #include "../utils/Config.h"
 #include "../pipeline/Pipeline.h"
+#include "../indexer/Man.h"
+#include "../indexer/Chunk.h"
 
 
 // ========================== Begin Log Tests =============================
@@ -28,10 +30,8 @@ TEST (LogTest, All) { // Check if logging messages workes properly
 TEST (ConfigTest, NormalCase) { // Confirm config works properly
     Config config;
 
-    ASSERT_NO_THROW(config._config["service"]["command_buffer_size"]);
-    ASSERT_NO_THROW(config._config["endpoint"]["host"]);
-    ASSERT_NO_THROW(config._config["endpoint"]["port"]);
-    ASSERT_NO_THROW(config._config["endpoint"]["vector_len"]);
+    ASSERT_NO_THROW(config._config["entry_params"]["max_chunks"]);
+    ASSERT_FALSE(config._config["entry_params"]["chunk_size"].is_null());
     ASSERT_TRUE(config._config["service"]["ports"].is_null());
 }
 // ========================== End Config Tests ============================
@@ -42,12 +42,45 @@ TEST (PipelineTest, CleanseTest) { // Confirm that the pipeline cleans up the st
     Pipeline pipeline;
     std::string test_string = "\ttest that. &*))██\nhello world!  ";
     std::string expected_out = "test that hello world";
+    std::string empty_string = "";
 
     pipeline.run(test_string);
 
     ASSERT_EQ(test_string, expected_out);
+    ASSERT_NO_THROW(pipeline.run(empty_string));
 }
 // ========================== End Pipeline Tests ==========================
+
+
+// ========================== Begin Manpage Tests ==========================
+TEST (ManpageTest, TestGetAllCommands) {
+    Man man;
+
+    ASSERT_NO_THROW(man.getAllCommands());
+    ASSERT_TRUE(man.getAllCommands().size());
+}
+
+TEST (ManpageTest, TestChunking) {
+    Man man;
+
+    ASSERT_NO_THROW(man.getCommandChunks("touch", man.getCommandMan("touch")));
+    ASSERT_TRUE(man.getCommandChunks("touch", man.getCommandMan("touch")).size());
+}
+
+TEST (ManpageTest, TestRetrieval) { // Confirm that the pipeline is able to get us a command vector
+    Man man;
+
+    ASSERT_NO_THROW({
+        std::vector<std::string> tmp = man.getAllCommands();
+        std::string tmp_manpage = man.getCommandMan(tmp[20]);
+        std::vector<Chunk> tmp_chunks = man.getCommandChunks(tmp[20], tmp_manpage);
+        std::cout << tmp_manpage << std::endl;
+        if (!tmp_chunks.size()) {
+            throw std::runtime_error("Nothing came back from command retrieval");
+        }
+    });
+}
+// ========================== End Manpage Tests ==========================
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);
