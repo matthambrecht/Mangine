@@ -36,3 +36,4 @@ A search engine to find relevant linux/package commands for a user's specified p
 - [ ] Find a better place to get less technical descriptions of commands (No non-technical person looking to view a file is gonna search anything close to `cat - concatenate files and print on the standard output`")
 - [ ] Add Ncurses GUI for more user friendliness
 - [ ] Maybe move back towards AI/ML? Don't really want Python though, might need to do some Cuda tomfoolery to get even more accurate results
+- [ ] DB Caching System for IDF

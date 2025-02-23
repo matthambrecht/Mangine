@@ -11,6 +11,7 @@
 #include "../utils/Log.h"
 #include "../utils/Config.h"
 #include "../pipeline/Pipeline.h"
+#include "../pipeline/BM25.h"
 #include "../indexer/Man.h"
 #include "../indexer/Chunk.h"
 #include "../indexer/Indexer.h"
@@ -50,6 +51,24 @@ TEST (PipelineTest, CleanseTest) { // Confirm that the pipeline cleans up the st
     ASSERT_EQ(test_string, expected_out);
     ASSERT_NO_THROW(pipeline.run(empty_string));
 }
+
+TEST (PipelineTest, DocumentVectorization) {
+    Man man;
+
+    std::vector<std::string> vectorized = BM25::process_document(
+        "The cat and the hat went moo!"
+    );
+
+    std::vector<std::string> expected = {
+        "The", "cat", "and", "the", "hat", "went", "moo!"
+    };
+
+    ASSERT_TRUE(vectorized.size() == 7);
+
+    for (int i = 0; i < expected.size(); i++) {
+        ASSERT_EQ(vectorized[i], expected[i]);
+    };
+};
 
 TEST (PipelineTest, LemmatizeTest) {}
 

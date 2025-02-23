@@ -32,30 +32,32 @@ FetchContent_Declare(
   GIT_TAG v1.15.x
 )
 
-FetchContent_MakeAvailable(gtest)
-
 ExternalProject_Add(
   sqlite3
   GIT_REPOSITORY https://github.com/sqlite/sqlite.git
   GIT_TAG version-3.49.0
+  SOURCE_DIR "${CMAKE_BINARY_DIR}/_deps/sqlite3-build"
+  BINARY_DIR "${CMAKE_BINARY_DIR}/_deps/sqlite3-build"
+  STAMP_DIR "${CMAKE_BINARY_DIR}/_deps/sqlite3-stamp"
   PREFIX ${CMAKE_BINARY_DIR}/_deps
   GIT_SHALLOW 1
-  CONFIGURE_COMMAND "${CMAKE_BINARY_DIR}/_deps/src/sqlite3/configure"
-  BUILD_COMMAND ""
-  UPDATE_DISCONNECTED true
+  CONFIGURE_COMMAND "${CMAKE_BINARY_DIR}/_deps/sqlite3-build/configure"
+  BUILD_COMMAND make
   UPDATE_COMMAND ""
-  INSTALL_COMMAND make # Run make with parallel jobs
+  INSTALL_COMMAND ""
 )
 
+FetchContent_MakeAvailable(gtest)
+
 # Specify where to find sqlite3 headers and library
-set(SQLITE3_INCLUDE_DIR ${CMAKE_BINARY_DIR}/_deps/src/sqlite3-build/)
-set(SQLITE3_LIBRARIES ${CMAKE_BINARY_DIR}/_deps/src/sqlite3-build/libsqlite3.a)
+set(SQLITE3_INCLUDE_DIR ${CMAKE_BINARY_DIR}/_deps/sqlite3-build/)
+set(SQLITE3_LIBRARIES ${CMAKE_BINARY_DIR}/_deps/sqlite3-build/libsqlite3.a)
 # ========================== End Library Stuff ==============================
 
 # ========================== Begin Compilation Stuff ========================
 add_executable(rungt ${LOCAL_FILES})
 add_compile_options(-Wall -Wextra -pedantic -Werror -g)
-target_include_directories(rungt PRIVATE ${LOCAL_DIRECTORIES} ${SQLITE3_INCLUDE_DIR})
+target_include_directories(rungt PRIVATE ${SQLITE3_INCLUDE_DIR} ${LOCAL_DIRECTORIES})
 target_link_libraries(rungt gtest gtest_main ${SQLITE3_LIBRARIES})
-add_dependencies(sqlite3 rungt)
+add_dependencies(rungt sqlite3)
 # ========================== End Compilation Stuff ==========================
