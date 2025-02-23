@@ -1,5 +1,8 @@
 #include "Pipeline.h"
 
+std::string CLASS_NAME = "Pipeline";
+
+
 void Pipeline::stripUnicode(std::string & str) // Remove all non-ascii characters
 { 
     str.erase(

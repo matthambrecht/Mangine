@@ -5,18 +5,14 @@
 #include <fstream>
 #include <vector>
 
-#include "../utils/json.hpp"
-
 class Chunk {
 public:
-    Chunk(const std::string& command, const std::string& chunk_val, pgvector::Vector& embedding);
-    pgvector::Vector getEmbedding() const;
-    std::string getCommand() const;
-    std::string getVal() const;
-    void setEmbedding(pgvector::Vector& embedding);
+    Chunk(const std::string& command, const std::string& chunk_val) : 
+    _command(command), _chunk_val(chunk_val) {};
+    std::string getCommand() const { return _command; };
+    std::string getVal() const { return _chunk_val; };
 private:
     std::string _command;
     std::string _chunk_val;
-    pgvector::Vector _embedding;
 };
 #endif
