@@ -1,5 +1,6 @@
 #include "Log.h"
 
+
 const std::string getTimestamp() {
     auto now = std::chrono::system_clock::now();
     std::time_t now_time = std::chrono::system_clock::to_time_t(now);
@@ -13,6 +14,7 @@ const std::string getTimestamp() {
     return ss.str();
 }
 
+
 const std::string formatMsg(
     const std::string& color,
     const std::string& errtype,
@@ -25,14 +27,17 @@ const std::string formatMsg(
     msg;
 }
 
-void Log::error(std::string classname, std::string msg) {
-   std::cout << formatMsg(RED, "Error", classname, msg) << std::endl;
+
+void Log::error(std::string msg) {
+   std::cout << formatMsg(RED, "Error", _classname, msg) << std::endl;
 }
 
-void Log::warning(std::string classname, std::string msg) {
-   std::cout << formatMsg(YELLOW, "Warning", classname, msg) << std::endl;
+
+void Log::warning(std::string msg) {
+   std::cout << formatMsg(YELLOW, "Warning", _classname, msg) << std::endl;
 }
 
-void Log::normal(std::string classname, std::string msg) {
-   std::cout << formatMsg(GREEN, "Log", classname, msg) << std::endl;
+
+void Log::normal(std::string msg) {
+   std::cout << formatMsg(GREEN, "Log", _classname, msg) << std::endl;
 }

@@ -15,9 +15,12 @@
 
 class Log {
 public:
-    Log() {};
-    void error(std::string classname, std::string msg);
-    void warning(std::string classname, std::string msg);
-    void normal(std::string classname, std::string msg);
+    Log() : _classname("Logger") {};
+    Log(std::string classname) : _classname(classname) {};
+    void error(std::string msg);
+    void warning(std::string msg);
+    void normal(std::string msg);
+private:
+    std::string _classname;
 };
 #endif

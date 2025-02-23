@@ -5,6 +5,4 @@ if [ ! -d ./build ]; then
 fi
 
 cd build
-cmake ..
-cmake --build .
-./rungt
+cmake .. && cmake --build . && ./rungt

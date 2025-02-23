@@ -1,204 +1,119 @@
 #include "Database.h"
 
-Database::Database() : _log(Log()), _config(Config()) {
-    std::string db_vars[3] = {"db_name", "db_user", "db_pass"};
+const std::string CLASS_NAME = "Database";
 
-    for (int i = 0; i < (int)(sizeof(db_vars) / sizeof(std::string)); i++) { // Validate the config vars exist
-        std::string tmp = _config._config["database"][db_vars[i]].get<std::string>();
-
-        if (tmp == "null") {
-            const std::string error_msg = "Error: " + db_vars[i] + " is undefined in 'config.json'";
-            _log.error(CLASS_NAME, error_msg);
-            throw std::runtime_error(error_msg);
-        }
-
-        db_vars[i] = tmp;
-    }
-
-    std::string conn_str = "user=" + db_vars[1] + " host=127.0.0.1 password=" + db_vars[2] + " dbname=" + db_vars[0];
-
-    // Attempt to connect to database
-    try {
-        _conn = new pqxx::connection(conn_str.c_str());
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error connecting to db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
+const void check_conn(Log & logger, sqlite3 * connection) {
+    if (!connection) {
+        std::string error_msg = "Database not connected";
+        logger.error(error_msg);
         throw std::runtime_error(error_msg);
     }
-
-    _log.normal(CLASS_NAME, "Conected to database " + db_vars[1] + "@127.0.0.1");
 }
 
-Database::Database(const Log& log, const Config& config) : _log(log), _config(config) {
-    std::string db_vars[3] = {"db_name", "db_user", "db_pass"};
 
-    for (int i = 0; i < (int)(sizeof(db_vars) / sizeof(std::string)); i++) { // Validate the config vars exist
-        std::string tmp = _config._config["database"][db_vars[i]].get<std::string>();
+const void check_query(Log & logger, int ret_val, char * sql_error_msg) {
+    if (ret_val != SQLITE_OK) {
+        std::string error_msg = "Error running db query: " + std::string(sql_error_msg);
+        logger.error(error_msg);
+        throw std::runtime_error(error_msg);
+    }
+}
 
-        if (tmp == "null") {
-            const std::string error_msg = "Error: " + db_vars[i] + " is undefined in 'config.json'";
-            _log.error(CLASS_NAME, error_msg);
-            throw std::runtime_error(error_msg);
+
+const std::string uuid_gen() {
+    /* This is a slightly less random version of a UUIDv4 gen 
+    but because collisions don't matter so long as the commands
+    are different we don't care. If they do collide, please buy a
+    lottery ticket.
+    */
+    std::random_device rd;
+    std::mt19937_64 gen(rd());
+    std::uniform_int_distribution<> dis(0, 15);
+    std::uniform_int_distribution<> dis2(8, 11);
+    int sets[] = {8, 4, 3, 4, 12};
+    std::string seps[] = {"-", "-4", "-", "-"};
+    std::stringstream ss; ss << std::hex;
+    int i, j;
+
+    for (j = 0; j < sizeof(sets) / sizeof(sets[0]); j++) {
+        for (i = 0; i < sets[j]; i++) {
+            ss << dis(gen);
         }
-
-        db_vars[i] = tmp;
+        
+        if (j < sizeof(seps) / sizeof(seps[0])) {
+            ss << seps[j];
+        }
     }
 
-    std::string conn_str = "user=" + db_vars[1] + " host=127.0.0.1 password=" + db_vars[2] + " dbname=" + db_vars[0];
+    return ss.str();
+}
+
+
+Database::Database() : _log(Log("Database")), _config(Config()) {
+    const std::string db_name = _config._config["database"]["name"].get<std::string>();
+    int ret_val = sqlite3_open(db_name.c_str(), &_conn);
 
     // Attempt to connect to database
-    try {
-        _conn = new pqxx::connection(conn_str.c_str());
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error connecting to db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
+    if (ret_val != SQLITE_OK) {
+        std::string error_msg = "Error connecting to db: " + std::string(sqlite3_errmsg(_conn));
+        _log.error(error_msg);
         throw std::runtime_error(error_msg);
     }
 
-    _log.normal(CLASS_NAME, "Conected to database " + db_vars[1] + "@127.0.0.1");
+    _log.normal("Conected to database '" + std::string(db_name) + "'");
 }
 
 
 Database::~Database() {
     if (_conn) {
-        _log.normal(CLASS_NAME, "Disconnecting from database...");
-        delete _conn;
-        _conn = nullptr;
+        sqlite3_close(_conn);
     }
 }
 
+
 void Database::init() { // Create all tables for the index
-    try {
-        pqxx::work transaction(*_conn);
-        int vector_size = _config._config["endpoint"]["vector_len"].get<int>();
-        const std::string query = R"(
-            CREATE EXTENSION IF NOT EXISTS vector;
-            CREATE TABLE IF NOT EXISTS mappings (
-                id bigserial PRIMARY KEY,
-                command text
-            );
-            CREATE TABLE IF NOT EXISTS chunks (
-                id bigserial PRIMARY KEY,
-                command text,
-                chunk_str text,
-                embedding vector()" + std::to_string(vector_size) + R"()
-            );
-            )";
+    std::string db_query = "CREATE TABLE IF NOT EXISTS chunks ("
+                           "     id text PRIMARY KEY NOT NULL,"
+                           "     command text NOT NULL,"
+                           "     chunk_str text NOT NULL)";
+    char * sql_error_msg = NULL;
 
-        transaction.exec0(query);
-        transaction.commit();
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error initializing db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
-        throw std::runtime_error(error_msg);
-    }
+    check_conn(_log, _conn);
+    check_query(
+        _log,
+        sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg),
+        sql_error_msg);
 
-    _log.normal(CLASS_NAME, "Recieved init() query");
+    _log.normal("Recieved init() query");
 }
 
 
 void Database::reset() { // Drop all tables to reset the index
-    try {
-        pqxx::work transaction(*_conn);
-        const std::string query = R"(
-            DROP TABLE IF EXISTS mappings;
-            DROP TABLE IF EXISTS chunks;
-            DROP EXTENSION IF EXISTS vector;
-            )";
+    std::string db_query = "DROP TABLE IF EXISTS chunks;";
+    char * sql_error_msg = NULL;
+    int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
 
-        transaction.exec0(query);
-        transaction.commit();
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error resetting db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
-        throw std::runtime_error(error_msg);
-    }
+    check_conn(_log, _conn);
+    check_query(
+        _log,
+        sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg),
+        sql_error_msg);
 
-    _log.normal(CLASS_NAME, "Recieved reset() query");
+    _log.normal("Recieved reset() query");
 } 
 
 
-void Database::insertCommand(const std::string& command) {
-    try {
-        pqxx::work transaction(*_conn);
-        const std::string query = R"(
-            INSERT INTO mappings (command) VALUES ($1);
-        )";
-        transaction.exec_params(query, command);
-        transaction.commit();
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error inserting command into db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
-        throw std::runtime_error(error_msg);
-    }
-}
-
 void Database::insertChunk(const Chunk& chunk) {
-    try {
-        pqxx::work transaction(*_conn);
-        const std::string query = R"(
-            INSERT INTO chunks (command, chunk_str, embedding) VALUES ($1, $2, $3);
-        )";
-        transaction.exec_params(query, chunk.getCommand(), chunk.getVal(), chunk.getEmbedding());
-        transaction.commit();
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error inserting chunk into db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
-        throw std::runtime_error(error_msg);
-    }
-}
-
-std::unordered_set<std::string> Database::getAllCommands() {
-    std::unordered_set<std::string> commands;
-    const std::string query = R"(
-        SELECT command FROM mappings;
-    )";
-
-    try {
-        pqxx::work transaction(*_conn);
-        pqxx::result result = transaction.exec(query);
-
-        for (int idx = 0; idx < std::size(result); ++idx) {
-            commands.insert(result[idx][0].as<std::string>());
-        }
-
-        _log.normal(CLASS_NAME, "Retrieved " + std::to_string(commands.size()) + " commands from db.");
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error getting commands from db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
-        throw std::runtime_error(error_msg);
-    }
-
-    return commands;
-}
-
-std::vector<Chunk> Database::retrieve(const pgvector::Vector& query_embeddings, int k_best = 25) {
-    const std::string query = R"(
-            SELECT command, chunk_str, embedding FROM chunks ORDER BY embedding <-> $1 LIMIT $2;
-        )";
-    std::vector<Chunk> k_best_chunks;
+    const std::string db_query = "INSERT INTO chunks (id, command, chunk_str) VALUES ('"
+        + uuid_gen() + "', '" + chunk.getVal() + "', '" + chunk.getCommand() + "');";
+    char * sql_error_msg = NULL;
     
-    _log.normal(CLASS_NAME, "Attempting to retrieve " + std::to_string(k_best) + " commands.");
-    try {
-        pqxx::work transaction(*_conn);
-        pqxx::result result{transaction.exec_params(query, query_embeddings, k_best)};
+    check_conn(_log, _conn);
+    check_query(
+        _log,
+        sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg),
+        sql_error_msg);
 
-        for (int idx = 0; idx < std::size(result); ++idx) {
-            pgvector::Vector embedding_vector = result[idx][2].as<pgvector::Vector>();
-            k_best_chunks.emplace_back(
-                Chunk(
-                    result[idx][0].as<std::string>(),
-                    result[idx][1].as<std::string>(),
-                    embedding_vector
-            ));
-        }
 
-        _log.normal(CLASS_NAME, "Retrieved " + std::to_string(k_best) + " commands.");
-    } catch (const std::exception& e) {
-        std::string error_msg = "Error retrieving chunks from db: " + std::string(e.what());
-        _log.error(CLASS_NAME, error_msg);
-        throw std::runtime_error(error_msg);
-    }
-
-    return k_best_chunks;
+    _log.normal("Recieved reset() query");
 }

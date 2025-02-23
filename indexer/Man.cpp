@@ -1,5 +1,6 @@
 #include "Man.h"
 
+
 // Gets the list of all executable commands with manpages (Sec. 1)
 std::vector<std::string> Man::getAllCommands() {
     char stdout_buffer[256];
@@ -7,11 +8,11 @@ std::vector<std::string> Man::getAllCommands() {
     std::string command = "apropos -s 1 ''";
     std::string command_result = "";
     FILE * pipe = popen(command.c_str(), "r");
-
+    
     // Check for pipe health
     if (!pipe) {
         const std::string error_msg = "Failed to open stdout pipe()";
-        _log.error(CLASS_NAME, error_msg);
+        _log.error(error_msg);
         throw std::runtime_error(error_msg);
     }
 
@@ -23,7 +24,7 @@ std::vector<std::string> Man::getAllCommands() {
     } catch (...) {
         const std::string error_msg = "Issue reading from stdout pipe()";
         pclose(pipe);
-        _log.error(CLASS_NAME, error_msg);
+        _log.error(error_msg);
         throw std::runtime_error(error_msg);
     }
 
@@ -43,12 +44,12 @@ std::vector<std::string> Man::getAllCommands() {
         }
     } else {
         const std::string error_msg = "Failed to recieve `man` command output";
-        _log.error(CLASS_NAME, error_msg);
+        _log.error(error_msg);
         throw std::ios_base::failure(error_msg);
     }
 
     pclose(pipe);
-    _log.normal(CLASS_NAME, "Retrieved " + std::to_string(command_vector.size()) + " commands from system.");
+    _log.normal("Retrieved " + std::to_string(command_vector.size()) + " commands from system.");
     
     return command_vector;
 }
@@ -58,14 +59,14 @@ std::vector<std::string> Man::getAllCommands() {
 std::string Man::getCommandMan(const std::string& command) {
     char stdout_buffer[1024];
     std::vector<std::string> command_vector;
-    std::string man_command = "info " + command + " 2>/dev/null";
+    std::string man_command = "info " + command + " 2>/dev/null | col -b";
     std::string command_result = "";
     FILE * pipe = popen(man_command.c_str(), "r");
 
     // Check for pipe health
     if (!pipe) {
         const std::string error_msg = "Failed to open stdout pipe()";
-        _log.error(CLASS_NAME, error_msg);
+        _log.error(error_msg);
         throw std::runtime_error(error_msg);
     }
 
@@ -82,7 +83,7 @@ std::string Man::getCommandMan(const std::string& command) {
     } catch (...) {
         const std::string error_msg = "Issue reading from stdout pipe()";
         pclose(pipe);
-        _log.error(CLASS_NAME, error_msg);
+        _log.error(error_msg);
         throw std::runtime_error(error_msg);
     }
 

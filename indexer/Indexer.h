@@ -6,23 +6,22 @@
 #include <vector>
 #include <unordered_set>
 
+#include "../utils/Config.h"
+#include "../utils/Log.h"
+#include "../database/Database.h"
+#include "Chunk.h"
+#include "Man.h"
+
 class Indexer {
 public:
-    Indexer(
-        const Log& log,
-        const Config& config,
-        Database* database,
-        Request* request
-        ) : _log(log), _config(config), _database(database), _request(request) {};
-    void indexAll();
-    void chunker();
-    void batch_embed(std::vector<Chunk>& chunks, std::vector<std::string> chunk_strs);
+    Indexer(Database* database) : 
+        _log(Log("Indexer")),
+        _config(Config()),
+        _database(database) {};
+    bool index(const std::string& command);
 private:
-    std::string CLASS_NAME = "Indexer";
-
     Log _log;
     Config _config;
     Database * _database;
-    Request * _request;
 };
 #endif
