@@ -34,9 +34,6 @@ FetchContent_Declare(
 
 FetchContent_MakeAvailable(gtest)
 
-# SQLite3 - Fetch content and build via ExternalProject
-include(ExternalProject)
-
 ExternalProject_Add(
   sqlite3
   GIT_REPOSITORY https://github.com/sqlite/sqlite.git
