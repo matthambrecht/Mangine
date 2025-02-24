@@ -8,7 +8,7 @@
 
 #include "../utils/Log.h"
 #include "../utils/Config.h"
-#include "../indexer/Chunk.h"
+#include "../indexer/Document.h"
 
 class Database {
 public:
@@ -16,7 +16,8 @@ public:
     ~Database();
     void init();
     void reset();
-    void insertChunk(const Chunk& chunk);
+    void insertDocument(const Document& document);
+    void insertDocuments(const std::vector<Document>& documents);
 private:
     Log _log;
     Config _config;

@@ -9,10 +9,11 @@ set(CMAKE_CXX_STANDARD_REQUIRED True)
 set(LOCAL_FILES
     tests/unit_tests.cpp
     utils/Log.cpp
-    pipeline/Pipeline.cpp
+    pipeline/TextProcessor.cpp
     indexer/Man.cpp
     indexer/Indexer.cpp
     database/Database.cpp
+    database/Corpora.cpp
 )
 set(LOCAL_DIRECTORIES
     tests

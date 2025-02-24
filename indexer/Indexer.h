@@ -9,7 +9,7 @@
 #include "../utils/Config.h"
 #include "../utils/Log.h"
 #include "../database/Database.h"
-#include "Chunk.h"
+#include "Document.h"
 #include "Man.h"
 
 class Indexer {
@@ -19,6 +19,7 @@ public:
         _config(Config()),
         _database(database) {};
     bool index(const std::string& command);
+    void indexAll();
 private:
     Log _log;
     Config _config;

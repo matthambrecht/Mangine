@@ -72,48 +72,95 @@ Database::~Database() {
 
 
 void Database::init() { // Create all tables for the index
-    std::string db_query = "CREATE TABLE IF NOT EXISTS chunks ("
+    std::string db_query = "CREATE TABLE IF NOT EXISTS documents ("
                            "     id text PRIMARY KEY NOT NULL,"
                            "     command text NOT NULL,"
-                           "     chunk_str text NOT NULL)";
+                           "     document_str text NOT NULL)";
     char * sql_error_msg = NULL;
 
     check_conn(_log, _conn);
     check_query(
         _log,
-        sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg),
-        sql_error_msg);
+        sqlite3_exec(
+            _conn,
+            db_query.c_str(),
+        NULL,
+        NULL,
+        &sql_error_msg),
+        sql_error_msg
+    );
 
     _log.normal("Recieved init() query");
 }
 
 
 void Database::reset() { // Drop all tables to reset the index
-    std::string db_query = "DROP TABLE IF EXISTS chunks;";
+    std::string db_query = "DROP TABLE IF EXISTS documents;";
     char * sql_error_msg = NULL;
     int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
 
     check_conn(_log, _conn);
     check_query(
         _log,
-        sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg),
-        sql_error_msg);
+        sqlite3_exec(
+            _conn,
+            db_query.c_str(),
+        NULL,
+        NULL,
+        &sql_error_msg),
+        sql_error_msg
+    );
 
     _log.normal("Recieved reset() query");
 } 
 
 
-void Database::insertChunk(const Chunk& chunk) {
-    const std::string db_query = "INSERT INTO chunks (id, command, chunk_str) VALUES ('"
-        + uuid_gen() + "', '" + chunk.getVal() + "', '" + chunk.getCommand() + "');";
+void Database::insertDocument(const Document& document) {
+    const std::string db_query = "INSERT INTO documents (id, command, document_str) VALUES ('"
+        + uuid_gen() + "', '" + document.getVal() + "', '" + document.getCommand() + "');";
     char * sql_error_msg = NULL;
     
     check_conn(_log, _conn);
     check_query(
         _log,
-        sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg),
-        sql_error_msg);
+        sqlite3_exec(
+            _conn,
+            db_query.c_str(),
+        NULL,
+        NULL,
+        &sql_error_msg),
+        sql_error_msg
+    );
+}
 
 
-    _log.normal("Recieved reset() query");
+void Database::insertDocuments(const std::vector<Document>& documents) {
+    std::stringstream db_query;
+    char * sql_error_msg = NULL;
+
+    if (documents.empty()) {
+        _log.warning("Attempted to bulk index empty vector of documents.");
+        return;
+    }
+
+    check_conn(_log, _conn);
+    db_query << "INSERT INTO documents (id, command, document_str) VALUES";
+
+    for (const Document& document : documents) {
+       db_query << " ('" << uuid_gen() << "', '" << document.getVal() << "', '" << document.getCommand() << "'),";
+    }
+
+    db_query.seekp(-1, db_query.cur);
+    db_query << ";";
+
+    check_query(
+        _log,
+        sqlite3_exec(
+            _conn,
+            db_query.str().c_str(),
+        NULL,
+        NULL,
+        &sql_error_msg),
+        sql_error_msg
+    );
 }

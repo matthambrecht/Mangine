@@ -10,12 +10,13 @@
 
 #include "../utils/Log.h"
 #include "../utils/Config.h"
-#include "../pipeline/Pipeline.h"
 #include "../pipeline/BM25.h"
+#include "../pipeline/TextProcessor.h"
 #include "../indexer/Man.h"
-#include "../indexer/Chunk.h"
+#include "../indexer/Document.h"
 #include "../indexer/Indexer.h"
 #include "../database/Database.h"
+#include "../database/Corpora.h"
 
 // ========================== Begin Log Tests =================================
 TEST (LogTest, All) { // Check if logging messages workes properly
@@ -40,22 +41,21 @@ TEST (ConfigTest, NormalCase) { // Confirm config works properly
 
 
 // ========================== Begin Pipeline Tests ============================
-TEST (PipelineTest, CleanseTest) { // Confirm that the pipeline cleans up the string as expected
-    Pipeline pipeline;
+TEST (PipelineTest, TextProcessor) { // Confirm that the pipeline cleans up the string as expected
     std::string test_string = "\ttest that. &*))██\nhello world!  ";
     std::string expected_out = "test that hello world";
     std::string empty_string = "";
 
-    pipeline.run(test_string);
+    TextProcessor::run(test_string);
 
     ASSERT_EQ(test_string, expected_out);
-    ASSERT_NO_THROW(pipeline.run(empty_string));
+    ASSERT_NO_THROW(TextProcessor::run(empty_string));
 }
 
 TEST (PipelineTest, DocumentVectorization) {
     Man man;
 
-    std::vector<std::string> vectorized = BM25::process_document(
+    std::vector<std::string> vectorized = BM25::vectorize_text(
         "The cat and the hat went moo!"
     );
 
@@ -65,7 +65,7 @@ TEST (PipelineTest, DocumentVectorization) {
 
     ASSERT_TRUE(vectorized.size() == 7);
 
-    for (int i = 0; i < expected.size(); i++) {
+    for (int i(0); i < expected.size(); i++) {
         ASSERT_EQ(vectorized[i], expected[i]);
     };
 };
@@ -86,22 +86,14 @@ TEST (ManpageTest, TestGetAllCommands) {
     ASSERT_TRUE(man.getAllCommands().size());
 }
 
-TEST (ManpageTest, TestChunking) {
-    Man man;
-
-    ASSERT_NO_THROW(man.getCommandChunks("touch", man.getCommandMan("touch")));
-    ASSERT_TRUE(man.getCommandChunks("touch", man.getCommandMan("touch")).size());
-}
-
 TEST (ManpageTest, TestRetrieval) { // Confirm that the pipeline is able to get us a command vector
     Man man;
 
     ASSERT_NO_THROW({
         std::vector<std::string> tmp = man.getAllCommands();
-        std::string tmp_manpage = man.getCommandMan(tmp[20]);
-        std::vector<Chunk> tmp_chunks = man.getCommandChunks(tmp[20], tmp_manpage);
-
-        if (!tmp_chunks.size()) {
+        Document tmp_manpage = man.getCommandMan(tmp[12]);
+        
+        if (tmp_manpage.getVal().empty()) {
             throw std::runtime_error("Nothing came back from command retrieval");
         }
     });
@@ -129,12 +121,39 @@ TEST (DatabaseTest, ResetDatabase) {
     });
 }
 
-TEST (DatabaseTest, ChunkInsert) {
+TEST (DatabaseTest, DocumentInsert) {
     ASSERT_NO_THROW({
         Database database;
         database.init();
-        database.insertChunk(Chunk("touch", "Create file"));
+        database.insertDocument(Document("touch", "Create file"));
     });
+}
+
+TEST (DatabaseTest, CorporaInsert) {
+    Corpora corpora;
+    const std::string test_str1 = "hello how are you hello";
+    const std::string test_str2 = "hey hi hello";
+    
+    ASSERT_EQ((int)corpora.avgdl(), 0);
+    ASSERT_EQ(corpora.f("hello", "test1"), 0);
+    ASSERT_EQ(corpora.D_mag("test1"), 0);
+    ASSERT_EQ(corpora.n("hello"), 0);
+
+    corpora.addDocument("test1", test_str1);
+
+    ASSERT_EQ((int)corpora.avgdl(), 5);
+    ASSERT_EQ(corpora.f("hello", "test1"), 2);
+    ASSERT_EQ(corpora.D_mag("test1"), 5);
+    ASSERT_EQ(corpora.n("hello"), 1);
+    ASSERT_EQ(corpora.n("hi"), 0);
+
+    corpora.addDocument("test2", test_str2);
+
+    ASSERT_EQ((int)corpora.avgdl(), 4);
+    ASSERT_EQ(corpora.f("hello", "test2"), 1);
+    ASSERT_EQ(corpora.D_mag("test2"), 3);
+    ASSERT_EQ(corpora.n("hello"), 2);
+    ASSERT_EQ(corpora.n("hi"), 1);
 }
 // ========================== End Database Tests ==============================
 
@@ -153,6 +172,38 @@ TEST (IndexerTest, TestSingleCommandInsert) {
     database->reset();
 
     ASSERT_FALSE(indexer.index("touch"));
+
+    delete database;
+}
+
+TEST (IndexerTest, IndexMultiple) {
+    Database * database = new Database();
+    Man man;
+    Indexer indexer(database);
+    std::vector<std::string> commands = man.getAllCommands();
+
+    database->reset();
+    database->init();
+
+    for (int i(0); i < 20; i++) {
+        indexer.index(commands[i]);
+    }
+
+    database->reset();
+
+    delete database;
+}
+
+TEST (IndexerTest, IndexAll) {
+    GTEST_SKIP();
+    Database * database = new Database();
+    Man man;
+    Indexer indexer(database);
+
+    database->reset();
+    database->init();
+
+    ASSERT_NO_THROW(indexer.indexAll());
 
     delete database;
 }
