@@ -56,8 +56,8 @@ std::vector<std::string> Man::getAllCommands() {
 
 
 // Gets manpage output for a command
-std::string Man::getCommandMan(const std::string& command) {
-    char stdout_buffer[1024];
+Document Man::getCommandMan(const std::string& command) {
+    char stdout_buffer[_document_size];
     std::vector<std::string> command_vector;
     std::string man_command = "info " + command + " 2>/dev/null | col -b";
     std::string command_result = "";
@@ -72,13 +72,10 @@ std::string Man::getCommandMan(const std::string& command) {
 
     // Run the command and get stdout
     try {
-        int counter = 0;
-        while(fgets(stdout_buffer, sizeof stdout_buffer, pipe) != NULL) {
-            command_result += stdout_buffer;
+        int counter(0);
 
-            if (counter++ >= _max_chunks) {
-                break;
-            }
+        while(fgets(stdout_buffer, _document_size * sizeof(char), pipe) != NULL) {
+            command_result += stdout_buffer;
         }
     } catch (...) {
         const std::string error_msg = "Issue reading from stdout pipe()";
@@ -88,22 +85,7 @@ std::string Man::getCommandMan(const std::string& command) {
     }
 
     pclose(pipe);
-    return command_result;
-}
+    TextProcessor::run(command_result);
 
-
-std::vector<Chunk> Man::getCommandChunks(const std::string& command, const std::string& man_contents) {
-    std::vector<Chunk> man_chunks;
-    int chunk_size = _config._config["entry_params"]["chunk_size"].get<int>();
-    std::string contents = man_contents;
-
-    Pipeline().run(contents);
-
-    for (size_t i = 0; i < contents.size(); i += chunk_size) {
-        std::string chunk_content = contents.substr(i, chunk_size);
-
-        man_chunks.push_back(Chunk(command, chunk_content));
-    }
-
-    return man_chunks;
+    return Document(command, command_result);
 }

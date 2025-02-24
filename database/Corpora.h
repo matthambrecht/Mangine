@@ -1,0 +1,76 @@
+/*
+This is our custom in memory storage option that allows us to
+quickly discern existence of data in documents.
+*/
+
+#ifndef CORPORA
+#define CORPORA
+
+#include <iostream>
+#include <unordered_map>
+#include <unordered_set>
+#include <utility>
+
+#include "../utils/Config.h"
+#include "../utils/Log.h"
+
+class Corpora {
+public:
+    Corpora() : 
+        _log(Log("Corpora")),
+        _config(Config()),
+        _doc_count(0),
+        _total_doc_length(0) {};
+    void addDocument(
+        const std::string& command,
+        const std::string& document
+    );
+    unsigned int n(const std::string& keyword) const;
+    unsigned int f(const std::string& keyword, const std::string& command) const;
+    unsigned int D_mag(const std::string& command) const;
+    double avgdl() const;
+private:
+    Log _log;
+    Config _config;
+    unsigned int _total_doc_length; // avgdl
+    unsigned int _doc_count; // N
+
+    /*
+    f(qi, D)
+
+    Hashmap (
+        Key: Command Name
+        Value: Hashmap(
+                    Key: Vocab Word
+                    Value: Count
+               ),
+    )
+    */
+    std::unordered_map<
+        std::string,
+            std::unordered_map<std::string, unsigned int
+            >> _inner_count;
+
+    /*
+    n(qi)
+
+    Hashmap (
+        Key: Keyword
+        Value: # of Documents Containing Keyword
+    )
+    */
+   std::unordered_map<std::string, unsigned int> _overall_count;
+
+
+   /*
+   |D|
+
+   Hashmap (
+        Key: Command
+        Value: Document Length
+   )
+   */
+  std::unordered_map<std::string, unsigned int> _doc_sizes;
+};
+
+#endif

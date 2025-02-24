@@ -25,6 +25,7 @@ A search engine to find relevant linux/package commands for a user's specified p
 - [X] Remove Python Webserver
 - [X] Move over to SQLite from Postgres
 - [X] Clean up Install Script
+- [ ] Bulk DB Document Updating (Slow as heck currently )
 - [ ] Clean up Unit Testing
 - [ ] Fix SQLi Vulnerability
 - [ ] Setup Preprocessing Pipeline (Lemmatization, Synonym Replacement, etc.)
@@ -36,3 +37,5 @@ A search engine to find relevant linux/package commands for a user's specified p
 - [ ] Find a better place to get less technical descriptions of commands (No non-technical person looking to view a file is gonna search anything close to `cat - concatenate files and print on the standard output`")
 - [ ] Add Ncurses GUI for more user friendliness
 - [ ] Maybe move back towards AI/ML? Don't really want Python though, might need to do some Cuda tomfoolery to get even more accurate results
+- [ ] DB Caching System for IDF
+- [ ] Config Validation (Don't want crappy configs breaking this)
