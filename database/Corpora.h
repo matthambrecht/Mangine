@@ -13,6 +13,7 @@ quickly discern existence of data in documents.
 
 #include "../utils/Config.h"
 #include "../utils/Log.h"
+#include "../database/Database.h"
 
 class Corpora {
 public:
@@ -20,7 +21,14 @@ public:
         _log(Log("Corpora")),
         _config(Config()),
         _doc_count(0),
-        _total_doc_length(0) {};
+        _total_doc_length(0),
+        _database(Database()) {};
+    Corpora(const std::string& db_name) : 
+        _log(Log("Corpora")),
+        _config(Config()),
+        _doc_count(0),
+        _total_doc_length(0),
+        _database(Database(db_name)) {};
     void addDocument(
         const std::string& command,
         const std::string& document
@@ -28,11 +36,13 @@ public:
     unsigned int n(const std::string& keyword) const;
     unsigned int f(const std::string& keyword, const std::string& command) const;
     unsigned int D_mag(const std::string& command) const;
+    unsigned int N() const {return _doc_count;}
     double avgdl() const;
 private:
     Log _log;
     Config _config;
-    unsigned int _total_doc_length; // avgdl
+    Database _database;
+    unsigned int _total_doc_length; // for avgdl
     unsigned int _doc_count; // N
 
     /*
@@ -61,7 +71,6 @@ private:
     */
    std::unordered_map<std::string, unsigned int> _overall_count;
 
-
    /*
    |D|
 
@@ -70,7 +79,7 @@ private:
         Value: Document Length
    )
    */
-  std::unordered_map<std::string, unsigned int> _doc_sizes;
+   std::unordered_map<std::string, unsigned int> _doc_sizes;
 };
 
 #endif

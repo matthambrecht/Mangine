@@ -9,6 +9,7 @@
 #include "../utils/Config.h"
 #include "../utils/Log.h"
 #include "../database/Database.h"
+#include "../database/Corpora.h"
 #include "Document.h"
 #include "Man.h"
 

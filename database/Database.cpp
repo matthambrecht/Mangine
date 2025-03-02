@@ -64,9 +64,24 @@ Database::Database() : _log(Log("Database")), _config(Config()) {
 }
 
 
+Database::Database(const std::string& db_name) : _log(Log("Database")), _config(Config()) {
+    int ret_val = sqlite3_open(db_name.c_str(), &_conn);
+
+    // Attempt to connect to database
+    if (ret_val != SQLITE_OK) {
+        std::string error_msg = "Error connecting to db: " + std::string(sqlite3_errmsg(_conn));
+        _log.error(error_msg);
+        throw std::runtime_error(error_msg);
+    }
+
+    _log.normal("Conected to database '" + db_name + "'");
+}
+
+
 Database::~Database() {
     if (_conn) {
         sqlite3_close(_conn);
+        _log.normal("Disconnected from database.");
     }
 }
 
@@ -75,7 +90,7 @@ void Database::init() { // Create all tables for the index
     std::string db_query = "CREATE TABLE IF NOT EXISTS documents ("
                            "     id text PRIMARY KEY NOT NULL,"
                            "     command text NOT NULL,"
-                           "     document_str text NOT NULL)";
+                           "     document_str text NOT NULL);";
     char * sql_error_msg = NULL;
 
     check_conn(_log, _conn);
@@ -96,6 +111,7 @@ void Database::init() { // Create all tables for the index
 
 void Database::reset() { // Drop all tables to reset the index
     std::string db_query = "DROP TABLE IF EXISTS documents;";
+
     char * sql_error_msg = NULL;
     int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
 
@@ -147,7 +163,9 @@ void Database::insertDocuments(const std::vector<Document>& documents) {
     db_query << "INSERT INTO documents (id, command, document_str) VALUES";
 
     for (const Document& document : documents) {
-       db_query << " ('" << uuid_gen() << "', '" << document.getVal() << "', '" << document.getCommand() << "'),";
+        if (!document.getVal().empty() && !document.getCommand().empty()) {
+            db_query << " ('" << uuid_gen() << "', '" << document.getVal() << "', '" << document.getCommand() << "'),";
+        }
     }
 
     db_query.seekp(-1, db_query.cur);
@@ -163,4 +181,70 @@ void Database::insertDocuments(const std::vector<Document>& documents) {
         &sql_error_msg),
         sql_error_msg
     );
+}
+
+static int get_document_callback(void *data, int argc, char **argv, char **azColName){
+    int i;
+    fprintf(stderr, "%s: ", (const char*)data);
+    
+    for(i = 0; i<argc; i++){
+       printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    
+    printf("\n");
+    return 0;
+}
+
+std::string Database::getDocument(const std::string& command) {
+    std::string db_query = "SELECT command, document_str from documents;";
+
+    char * sql_error_msg = NULL;
+    int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
+
+    check_conn(_log, _conn);
+    check_query(
+        _log,
+        sqlite3_exec(
+            _conn,
+            db_query.c_str(),
+        NULL,
+        NULL,
+        &sql_error_msg),
+        sql_error_msg
+    );
+
+    return "";
+}
+
+static int get_all_documents_callback(void *data, int argc, char **argv, char **azColName) {
+    int i;
+    fprintf(stderr, "%s: ", (const char*)data);
+    
+    for(i = 0; i<argc; i++){
+       printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
+    }
+    
+    printf("\n");
+    return 0;
+}
+
+std::vector<Document> Database::getAllDocuments() {
+    std::string db_query = "SELECT command, document_str from documents;";
+
+    char * sql_error_msg = NULL;
+    int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
+
+    check_conn(_log, _conn);
+    check_query(
+        _log,
+        sqlite3_exec(
+            _conn,
+            db_query.c_str(),
+        NULL,
+        NULL,
+        &sql_error_msg),
+        sql_error_msg
+    );
+
+    return {};
 }

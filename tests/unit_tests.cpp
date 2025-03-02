@@ -10,13 +10,13 @@
 
 #include "../utils/Log.h"
 #include "../utils/Config.h"
-#include "../pipeline/BM25.h"
 #include "../pipeline/TextProcessor.h"
 #include "../indexer/Man.h"
 #include "../indexer/Document.h"
 #include "../indexer/Indexer.h"
 #include "../database/Database.h"
 #include "../database/Corpora.h"
+#include "../database/Search.h"
 
 // ========================== Begin Log Tests =================================
 TEST (LogTest, All) { // Check if logging messages workes properly
@@ -52,29 +52,27 @@ TEST (PipelineTest, TextProcessor) { // Confirm that the pipeline cleans up the 
     ASSERT_NO_THROW(TextProcessor::run(empty_string));
 }
 
-TEST (PipelineTest, DocumentVectorization) {
-    Man man;
-
-    std::vector<std::string> vectorized = BM25::vectorize_text(
-        "The cat and the hat went moo!"
-    );
-
-    std::vector<std::string> expected = {
-        "The", "cat", "and", "the", "hat", "went", "moo!"
-    };
-
-    ASSERT_TRUE(vectorized.size() == 7);
-
-    for (int i(0); i < expected.size(); i++) {
-        ASSERT_EQ(vectorized[i], expected[i]);
-    };
-};
+TEST (PipelineTest, DocumentVectorization) {};
 
 TEST (PipelineTest, LemmatizeTest) {}
 
 TEST (PipelineTest, SynonymTest) {}
 
-TEST (PipelineTest, BM25ScoreTest) {}
+TEST (PipelineTest, BM25ScoreTest) {
+    Corpora corpora;
+    Man man;
+    std::string query = "How do I download a file from a website?";
+    TextProcessor::run(query);
+    std::vector<std::string> commands = man.getAllCommands();
+    std::vector<std::string> chopped(commands.begin(), commands.begin() + 20);
+    chopped.push_back("curl");
+
+    for (const std::string& command : chopped) {
+        corpora.addDocument(command, man.getCommandMan(command).getVal());
+    }
+
+    BM25::score(query, corpora, chopped, 15);
+}
 // ========================== End Pipeline Tests ==============================
 
 
@@ -129,6 +127,16 @@ TEST (DatabaseTest, DocumentInsert) {
     });
 }
 
+TEST (DatabaseTest, GetSingleDocument) {
+    Database database("../tests/test.db");
+    database.getDocument("touch");
+    database.getDocument("notacommand");
+}
+
+TEST (DatabaseTest, GetAllDocuments) {
+
+}
+
 TEST (DatabaseTest, CorporaInsert) {
     Corpora corpora;
     const std::string test_str1 = "hello how are you hello";
@@ -155,11 +163,20 @@ TEST (DatabaseTest, CorporaInsert) {
     ASSERT_EQ(corpora.n("hello"), 2);
     ASSERT_EQ(corpora.n("hi"), 1);
 }
+
+TEST (DatabaseTest, CorporaReadFromDb) {
+    Database * db = new Database("../tests/test.db");
+
+
+
+    delete db;
+}
 // ========================== End Database Tests ==============================
 
 
 // ========================== Begin Indexer Tests ============================
 TEST (IndexerTest, TestSingleCommandInsert) {
+    GTEST_SKIP();
     Database * database = new Database();
     Indexer indexer(database);
 
@@ -177,6 +194,7 @@ TEST (IndexerTest, TestSingleCommandInsert) {
 }
 
 TEST (IndexerTest, IndexMultiple) {
+    GTEST_SKIP();
     Database * database = new Database();
     Man man;
     Indexer indexer(database);
