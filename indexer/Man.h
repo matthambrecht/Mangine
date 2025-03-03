@@ -7,26 +7,22 @@
 #include <vector>
 #include <cstdio>
 
-#include "Chunk.h"
+#include "Document.h"
 #include "../libs/json.hpp"
-#include "../pipeline/Pipeline.h"
+#include "../pipeline/TextProcessor.h"
 #include "../utils/Config.h"
 #include "../utils/Log.h"
 
 class Man {
 public:
     Man() : _log(Log()), _config(Config()) {
-        _max_chunks = _config._config["entry_params"]["chunk_size"].get<int>();
+        _document_size = _config._config["entry_params"]["document_size"].get<int>();
     };
     std::vector<std::string> getAllCommands();
-    std::string getCommandMan(const std::string& command);
-    std::vector<Chunk> getCommandChunks(
-        const std::string& command,
-        const std::string& man_contents
-        );
+    Document getCommandMan(const std::string& command);
 private:
     Log _log;
     Config _config;
-    int _max_chunks;
+    int _document_size;
 };
 #endif

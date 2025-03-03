@@ -10743,12 +10743,12 @@ class binary_reader
             {
                 while (get() != 0xFF)
                 {
-                    string_t chunk;
-                    if (!get_cbor_string(chunk))
+                    string_t document;
+                    if (!get_cbor_string(document))
                     {
                         return false;
                     }
-                    result.append(chunk);
+                    result.append(document);
                 }
                 return true;
             }
@@ -10843,12 +10843,12 @@ class binary_reader
             {
                 while (get() != 0xFF)
                 {
-                    binary_t chunk;
-                    if (!get_cbor_binary(chunk))
+                    binary_t document;
+                    if (!get_cbor_binary(document))
                     {
                         return false;
                     }
-                    result.insert(result.end(), chunk.begin(), chunk.end());
+                    result.insert(result.end(), document.begin(), document.end());
                 }
                 return true;
             }

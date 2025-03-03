@@ -3,7 +3,6 @@
         "name": "mangine.db"
     },
     "entry_params": {
-        "chunk_size": 1024,
-        "max_chunks": 2
+        "document_size": 1024
     }
 }
