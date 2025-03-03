@@ -18,6 +18,13 @@
 #include "../database/Corpora.h"
 #include "../database/Search.h"
 
+void manual_clear_db() {
+    Database * database = new Database();
+    database->reset();
+    database->init();
+    delete database;
+}
+
 // ========================== Begin Log Tests =================================
 TEST (LogTest, All) { // Check if logging messages workes properly
     Log log("Test");
@@ -59,6 +66,8 @@ TEST (PipelineTest, LemmatizeTest) {}
 TEST (PipelineTest, SynonymTest) {}
 
 TEST (PipelineTest, BM25ScoreTest) {
+    manual_clear_db();
+
     Corpora corpora;
     Man man;
     std::string query = "How do I download a file from a website?";
@@ -68,10 +77,12 @@ TEST (PipelineTest, BM25ScoreTest) {
     chopped.push_back("curl");
 
     for (const std::string& command : chopped) {
-        corpora.addDocument(command, man.getCommandMan(command).getVal());
+        corpora.addDocument(Document(command, man.getCommandMan(command).getVal()));
     }
 
     BM25::score(query, corpora, chopped, 15);
+    
+    corpora.clear();
 }
 // ========================== End Pipeline Tests ==============================
 
@@ -105,8 +116,8 @@ TEST (DatabaseTest, DatabaseConnection) {
 }
 
 TEST (DatabaseTest, InitDatabase) {
-    // Valid DB Setup
     Database valid_database;
+
     ASSERT_NO_THROW(valid_database.init());
 }
 
@@ -122,19 +133,24 @@ TEST (DatabaseTest, ResetDatabase) {
 TEST (DatabaseTest, DocumentInsert) {
     ASSERT_NO_THROW({
         Database database;
+        Document doc("touch", "Create file");
         database.init();
-        database.insertDocument(Document("touch", "Create file"));
+        database.insertDocument(doc);
     });
 }
 
 TEST (DatabaseTest, GetSingleDocument) {
     Database database("../tests/test.db");
-    database.getDocument("touch");
-    database.getDocument("notacommand");
+
+    ASSERT_NE(database.getDocument("touch"), std::nullopt);
+    ASSERT_EQ(database.getDocument("touch")->getCommand(), "touch");
+    ASSERT_EQ(database.getDocument("notacommand"), std::nullopt);
 }
 
 TEST (DatabaseTest, GetAllDocuments) {
-
+    Database database("../tests/test.db");
+    std::vector<Document> documents = database.getAllDocuments();
+    ASSERT_EQ((int) documents.size(), 1526);
 }
 
 TEST (DatabaseTest, CorporaInsert) {
@@ -142,20 +158,20 @@ TEST (DatabaseTest, CorporaInsert) {
     const std::string test_str1 = "hello how are you hello";
     const std::string test_str2 = "hey hi hello";
     
-    ASSERT_EQ((int)corpora.avgdl(), 0);
+    ASSERT_EQ((int) corpora.avgdl(), 0);
     ASSERT_EQ(corpora.f("hello", "test1"), 0);
     ASSERT_EQ(corpora.D_mag("test1"), 0);
     ASSERT_EQ(corpora.n("hello"), 0);
 
-    corpora.addDocument("test1", test_str1);
+    corpora.addDocument(Document("test1", test_str1));
 
-    ASSERT_EQ((int)corpora.avgdl(), 5);
+    ASSERT_EQ((int) corpora.avgdl(), 5);
     ASSERT_EQ(corpora.f("hello", "test1"), 2);
     ASSERT_EQ(corpora.D_mag("test1"), 5);
     ASSERT_EQ(corpora.n("hello"), 1);
     ASSERT_EQ(corpora.n("hi"), 0);
 
-    corpora.addDocument("test2", test_str2);
+    corpora.addDocument(Document("test2", test_str2));
 
     ASSERT_EQ((int)corpora.avgdl(), 4);
     ASSERT_EQ(corpora.f("hello", "test2"), 1);
@@ -167,8 +183,6 @@ TEST (DatabaseTest, CorporaInsert) {
 TEST (DatabaseTest, CorporaReadFromDb) {
     Database * db = new Database("../tests/test.db");
 
-
-
     delete db;
 }
 // ========================== End Database Tests ==============================
@@ -176,54 +190,42 @@ TEST (DatabaseTest, CorporaReadFromDb) {
 
 // ========================== Begin Indexer Tests ============================
 TEST (IndexerTest, TestSingleCommandInsert) {
-    GTEST_SKIP();
-    Database * database = new Database();
-    Indexer indexer(database);
+    manual_clear_db();
 
-    database->reset();
-    database->init();
+    Indexer indexer;
 
     ASSERT_TRUE(indexer.index("touch"));
     ASSERT_FALSE(indexer.index("nonexistentcommand"));
-
-    database->reset();
-
     ASSERT_FALSE(indexer.index("touch"));
 
-    delete database;
+    manual_clear_db();
 }
 
 TEST (IndexerTest, IndexMultiple) {
-    GTEST_SKIP();
-    Database * database = new Database();
-    Man man;
-    Indexer indexer(database);
-    std::vector<std::string> commands = man.getAllCommands();
+    manual_clear_db();
+    
+    ASSERT_NO_THROW({
+        Man man;
+        Indexer indexer;
+        std::vector<std::string> commands = man.getAllCommands();
 
-    database->reset();
-    database->init();
+        for (int i(0); i < 20; i++) {
+            indexer.index(commands[i]);
+        }
+    });
 
-    for (int i(0); i < 20; i++) {
-        indexer.index(commands[i]);
-    }
-
-    database->reset();
-
-    delete database;
+    manual_clear_db();
 }
 
 TEST (IndexerTest, IndexAll) {
-    GTEST_SKIP();
-    Database * database = new Database();
+    manual_clear_db();
+    
     Man man;
-    Indexer indexer(database);
-
-    database->reset();
-    database->init();
+    Indexer indexer;
 
     ASSERT_NO_THROW(indexer.indexAll());
-
-    delete database;
+    
+    manual_clear_db();
 }
 // ========================== End Indexer Tests ==============================
 

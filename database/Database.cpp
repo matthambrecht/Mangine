@@ -11,9 +11,22 @@ const void check_conn(Log & logger, sqlite3 * connection) {
 }
 
 
-const void check_query(Log & logger, int ret_val, char * sql_error_msg) {
+const void check_query(
+    Log & logger,
+    int ret_val,
+    char * sql_error_msg = NULL,
+    sqlite3 * db = NULL) {
+    std::string error_msg;
+    
     if (ret_val != SQLITE_OK) {
-        std::string error_msg = "Error running db query: " + std::string(sql_error_msg);
+        if (sql_error_msg) {
+            error_msg = "Error running db query: " + std::string(sql_error_msg);
+        } else if (db) {
+            error_msg = sqlite3_errmsg(db);
+        } else {
+            error_msg = "Unknown error";
+        }
+
         logger.error(error_msg);
         throw std::runtime_error(error_msg);
     }
@@ -89,7 +102,7 @@ Database::~Database() {
 void Database::init() { // Create all tables for the index
     std::string db_query = "CREATE TABLE IF NOT EXISTS documents ("
                            "     id text PRIMARY KEY NOT NULL,"
-                           "     command text NOT NULL,"
+                           "     command text UNIQUE NOT NULL,"
                            "     document_str text NOT NULL);";
     char * sql_error_msg = NULL;
 
@@ -133,7 +146,7 @@ void Database::reset() { // Drop all tables to reset the index
 
 void Database::insertDocument(const Document& document) {
     const std::string db_query = "INSERT INTO documents (id, command, document_str) VALUES ('"
-        + uuid_gen() + "', '" + document.getVal() + "', '" + document.getCommand() + "');";
+        + uuid_gen() + "', '" + document.getCommand() + "', '" + document.getVal() + "');";
     char * sql_error_msg = NULL;
     
     check_conn(_log, _conn);
@@ -164,7 +177,7 @@ void Database::insertDocuments(const std::vector<Document>& documents) {
 
     for (const Document& document : documents) {
         if (!document.getVal().empty() && !document.getCommand().empty()) {
-            db_query << " ('" << uuid_gen() << "', '" << document.getVal() << "', '" << document.getCommand() << "'),";
+            db_query << " ('" << uuid_gen() << "', '" << document.getCommand() << "', '" << document.getVal() << "'),";
         }
     }
 
@@ -179,72 +192,77 @@ void Database::insertDocuments(const std::vector<Document>& documents) {
         NULL,
         NULL,
         &sql_error_msg),
-        sql_error_msg
+        sql_error_msg,
+        _conn
     );
 }
 
-static int get_document_callback(void *data, int argc, char **argv, char **azColName){
-    int i;
-    fprintf(stderr, "%s: ", (const char*)data);
-    
-    for(i = 0; i<argc; i++){
-       printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    }
-    
-    printf("\n");
-    return 0;
-}
 
-std::string Database::getDocument(const std::string& command) {
-    std::string db_query = "SELECT command, document_str from documents;";
-
-    char * sql_error_msg = NULL;
-    int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
+std::optional<Document> Database::getDocument(const std::string& command) {
+    sqlite3_stmt * stmt;
+    std::string db_query = "SELECT command, document_str from documents WHERE command = '" + command + "';";
+    int ret_val;
+    std::vector<Document> documents;
 
     check_conn(_log, _conn);
     check_query(
         _log,
-        sqlite3_exec(
+        sqlite3_prepare_v2(
             _conn,
             db_query.c_str(),
+            -1,
+            &stmt,
+            0),
         NULL,
-        NULL,
-        &sql_error_msg),
-        sql_error_msg
+        _conn
     );
 
-    return "";
+    if ((ret_val = sqlite3_step(stmt)) == SQLITE_ROW) {
+        const char * command_name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+        const char * command_desc = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+
+        if (command_name and command_desc) {
+            return
+                Document(
+                    std::string(command_name),
+                    std::string(command_desc));
+        }
+    }
+
+    return std::nullopt;
 }
 
-static int get_all_documents_callback(void *data, int argc, char **argv, char **azColName) {
-    int i;
-    fprintf(stderr, "%s: ", (const char*)data);
-    
-    for(i = 0; i<argc; i++){
-       printf("%s = %s\n", azColName[i], argv[i] ? argv[i] : "NULL");
-    }
-    
-    printf("\n");
-    return 0;
-}
 
 std::vector<Document> Database::getAllDocuments() {
+    sqlite3_stmt * stmt;
     std::string db_query = "SELECT command, document_str from documents;";
-
-    char * sql_error_msg = NULL;
-    int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
+    int ret_val;
+    std::vector<Document> documents;
 
     check_conn(_log, _conn);
     check_query(
         _log,
-        sqlite3_exec(
+        sqlite3_prepare_v2(
             _conn,
             db_query.c_str(),
+            -1,
+            &stmt,
+            0),
         NULL,
-        NULL,
-        &sql_error_msg),
-        sql_error_msg
+        _conn
     );
 
-    return {};
+    while ((ret_val = sqlite3_step(stmt)) == SQLITE_ROW) {
+        const char * command_name = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 0));
+        const char * command_desc = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 1));
+
+        if (command_name and command_desc) {
+            documents.push_back(
+                Document(
+                    std::string(command_name),
+                    std::string(command_desc)));
+        }
+    }
+
+    return documents;
 }

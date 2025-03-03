@@ -2,11 +2,8 @@
 
 
 bool Indexer::index(const std::string& command) {
-    bool status = true;
-    Man man;
-
     try {
-        Document document = man.getCommandMan(command);
+        Document document = Man().getCommandMan(command);
     
         if (document.getVal().empty()) { // Command likely wasn't retrieveable
             _log.error(
@@ -14,7 +11,7 @@ bool Indexer::index(const std::string& command) {
             return false;
         }
 
-        _database->insertDocument(document);
+        return _corpora.addDocument(document);
     } catch (const std::exception& e) {
         _log.error(
             "Something went wrong when attempting to document the command '" + command + "' -> " +
@@ -22,8 +19,6 @@ bool Indexer::index(const std::string& command) {
 
         return false;
     }
-
-    return true;
 }
 
 
@@ -45,7 +40,7 @@ void Indexer::indexAll() {
             documents.push_back(document);
         }
 
-        _database->insertDocuments(documents);
+        _corpora.addDocuments(documents);
     } catch (const std::exception& e) {
         _log.error(
             "Something went wrong when attempting to document all commands -> " + std::string(e.what()));

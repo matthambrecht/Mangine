@@ -15,15 +15,15 @@
 
 class Indexer {
 public:
-    Indexer(Database* database) : 
+    Indexer() : 
         _log(Log("Indexer")),
         _config(Config()),
-        _database(database) {};
+        _corpora(Corpora()) {};
     bool index(const std::string& command);
     void indexAll();
 private:
     Log _log;
     Config _config;
-    Database * _database;
+    Corpora _corpora;
 };
 #endif

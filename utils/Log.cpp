@@ -29,7 +29,7 @@ const std::string formatMsg(
 
 
 void Log::error(std::string msg) {
-   std::cout << formatMsg(RED, "Error", _classname, msg) << std::endl;
+   std::cerr << formatMsg(RED, "Error", _classname, msg) << std::endl;
 }
 
 

@@ -22,17 +22,27 @@ public:
         _config(Config()),
         _doc_count(0),
         _total_doc_length(0),
-        _database(Database()) {};
+        _database(new Database()) {};
     Corpora(const std::string& db_name) : 
         _log(Log("Corpora")),
         _config(Config()),
         _doc_count(0),
         _total_doc_length(0),
-        _database(Database(db_name)) {};
-    void addDocument(
-        const std::string& command,
-        const std::string& document
-    );
+        _database(new Database(db_name)) {
+            if (!_database) {
+                return;
+            }
+        
+            addDocuments(_database->getAllDocuments());
+        };
+    ~Corpora() {
+        if (_database) {
+            delete _database;
+        }
+    };
+    bool addDocument(const Document& doc);
+    void addDocuments(const std::vector<Document>& documents);
+    void clear();
     unsigned int n(const std::string& keyword) const;
     unsigned int f(const std::string& keyword, const std::string& command) const;
     unsigned int D_mag(const std::string& command) const;
@@ -41,7 +51,7 @@ public:
 private:
     Log _log;
     Config _config;
-    Database _database;
+    Database * _database;
     unsigned int _total_doc_length; // for avgdl
     unsigned int _doc_count; // N
 
