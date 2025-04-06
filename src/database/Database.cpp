@@ -2,7 +2,7 @@
 
 const std::string CLASS_NAME = "Database";
 
-const void check_conn(Log & logger, sqlite3 * connection) {
+void check_conn(Log & logger, sqlite3 * connection) {
     if (!connection) {
         std::string error_msg = "Database not connected";
         logger.error(error_msg);
@@ -11,7 +11,7 @@ const void check_conn(Log & logger, sqlite3 * connection) {
 }
 
 
-const void check_query(
+void check_query(
     Log & logger,
     int ret_val,
     char * sql_error_msg = NULL,
@@ -23,8 +23,10 @@ const void check_query(
             error_msg = "Error running db query: " + std::string(sql_error_msg);
         } else if (db) {
             error_msg = sqlite3_errmsg(db);
+        } else if (ret_val == SQLITE_CONSTRAINT) {
+            return;
         } else {
-            error_msg = "Unknown error";
+            error_msg = sqlite3_errstr(ret_val);
         }
 
         logger.error(error_msg);
@@ -43,10 +45,10 @@ const std::string uuid_gen() {
     std::mt19937_64 gen(rd());
     std::uniform_int_distribution<> dis(0, 15);
     std::uniform_int_distribution<> dis2(8, 11);
-    int sets[] = {8, 4, 3, 4, 12};
+    unsigned long int sets[] = {8, 4, 3, 4, 12};
     std::string seps[] = {"-", "-4", "-", "-"};
     std::stringstream ss; ss << std::hex;
-    int i, j;
+    unsigned long int i, j;
 
     for (j = 0; j < sizeof(sets) / sizeof(sets[0]); j++) {
         for (i = 0; i < sets[j]; i++) {
@@ -126,7 +128,7 @@ void Database::reset() { // Drop all tables to reset the index
     std::string db_query = "DROP TABLE IF EXISTS documents;";
 
     char * sql_error_msg = NULL;
-    int ret_val = sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
+    sqlite3_exec(_conn, db_query.c_str(), NULL, NULL, &sql_error_msg);
 
     check_conn(_log, _conn);
     check_query(

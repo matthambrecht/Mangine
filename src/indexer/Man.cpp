@@ -57,7 +57,7 @@ std::vector<std::string> Man::getAllCommands() {
 
 // Gets manpage output for a command
 Document Man::getCommandMan(const std::string& command) {
-    char stdout_buffer[_document_size];
+    std::vector<char> stdout_buffer(_document_size);
     std::vector<std::string> command_vector;
     std::string man_command = "info " + command + " 2>/dev/null | col -b";
     std::string command_result = "";
@@ -72,10 +72,8 @@ Document Man::getCommandMan(const std::string& command) {
 
     // Run the command and get stdout
     try {
-        int counter(0);
-
-        while(fgets(stdout_buffer, _document_size * sizeof(char), pipe) != NULL) {
-            command_result += stdout_buffer;
+        while(fgets(stdout_buffer.data(), _document_size * sizeof(char), pipe) != NULL) {
+            command_result += stdout_buffer.data();
         }
     } catch (...) {
         const std::string error_msg = "Issue reading from stdout pipe()";

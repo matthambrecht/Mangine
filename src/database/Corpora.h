@@ -17,24 +17,31 @@ quickly discern existence of data in documents.
 
 class Corpora {
 public:
-    Corpora() : 
+    Corpora() :
         _log(Log("Corpora")),
         _config(Config()),
-        _doc_count(0),
-        _total_doc_length(0),
-        _database(new Database()) {};
-    Corpora(const std::string& db_name) : 
-        _log(Log("Corpora")),
-        _config(Config()),
-        _doc_count(0),
-        _total_doc_length(0),
-        _database(new Database(db_name)) {
+        _database(new Database()), 
+        _doc_count(0),             
+        _total_doc_length(0) {     
             if (!_database) {
                 return;
             }
-        
+
             addDocuments(_database->getAllDocuments());
-        };
+        }
+
+    Corpora(const std::string& db_name) :
+        _log(Log("Corpora")),
+        _config(Config()),
+        _database(new Database(db_name)), 
+        _doc_count(0),                    
+        _total_doc_length(0) {
+            if (!_database) {
+                return;
+            }
+
+            addDocuments(_database->getAllDocuments());
+       }
     ~Corpora() {
         if (_database) {
             delete _database;
@@ -52,8 +59,8 @@ private:
     Log _log;
     Config _config;
     Database * _database;
-    unsigned int _total_doc_length; // for avgdl
     unsigned int _doc_count; // N
+    unsigned int _total_doc_length; // for avgdl
 
     /*
     f(qi, D)

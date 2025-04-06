@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "../libs/json.hpp"
+#include "../include/json.hpp"
 
 class Config {
 public:

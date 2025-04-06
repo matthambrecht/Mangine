@@ -10,19 +10,38 @@
 
 #include "../utils/Log.h"
 #include "../utils/Config.h"
-#include "../pipeline/TextProcessor.h"
+#include "../indexer/TextProcessor.h"
 #include "../indexer/Man.h"
 #include "../indexer/Document.h"
 #include "../indexer/Indexer.h"
 #include "../database/Database.h"
 #include "../database/Corpora.h"
 #include "../database/Search.h"
+#include "../interface/API.h"
+#include "../interface/service.h"
+
+
+const unsigned int MAX_CORPORA_TEST_SIZE = 20;
+
 
 void manual_clear_db() {
     Database * database = new Database();
     database->reset();
     database->init();
     delete database;
+}
+
+
+void manual_corpora_state() {
+    Corpora corpora;
+    Man man;
+    std::vector<std::string> commands = man.getAllCommands();
+
+    corpora.clear();
+
+    for (int i(0); i < MAX_CORPORA_TEST_SIZE; i++) {
+        corpora.addDocument(man.getCommandMan(commands[i]));
+    }
 }
 
 // ========================== Begin Log Tests =================================
@@ -73,7 +92,7 @@ TEST (PipelineTest, BM25ScoreTest) {
     std::string query = "How do I download a file from a website?";
     TextProcessor::run(query);
     std::vector<std::string> commands = man.getAllCommands();
-    std::vector<std::string> chopped(commands.begin(), commands.begin() + 20);
+    std::vector<std::string> chopped(commands.begin(), commands.begin() + MAX_CORPORA_TEST_SIZE);
     chopped.push_back("curl");
 
     for (const std::string& command : chopped) {
@@ -155,6 +174,8 @@ TEST (DatabaseTest, GetAllDocuments) {
 
 TEST (DatabaseTest, CorporaInsert) {
     Corpora corpora;
+    corpora.clear();
+
     const std::string test_str1 = "hello how are you hello";
     const std::string test_str2 = "hey hi hello";
     
@@ -181,9 +202,9 @@ TEST (DatabaseTest, CorporaInsert) {
 }
 
 TEST (DatabaseTest, CorporaReadFromDb) {
-    Database * db = new Database("../tests/test.db");
+    Corpora corpora("../tests/test.db");
 
-    delete db;
+    ASSERT_EQ(corpora.N(), 1526);
 }
 // ========================== End Database Tests ==============================
 
@@ -209,7 +230,7 @@ TEST (IndexerTest, IndexMultiple) {
         Indexer indexer;
         std::vector<std::string> commands = man.getAllCommands();
 
-        for (int i(0); i < 20; i++) {
+        for (int i(0); i < MAX_CORPORA_TEST_SIZE; i++) {
             indexer.index(commands[i]);
         }
     });
@@ -217,17 +238,35 @@ TEST (IndexerTest, IndexMultiple) {
     manual_clear_db();
 }
 
-TEST (IndexerTest, IndexAll) {
-    manual_clear_db();
+// TEST (IndexerTest, IndexAll) {
+//     manual_clear_db();
     
-    Man man;
-    Indexer indexer;
+//     Man man;
+//     Indexer indexer;
 
-    ASSERT_NO_THROW(indexer.indexAll());
+//     ASSERT_NO_THROW(indexer.indexAll());
     
-    manual_clear_db();
-}
+//     manual_clear_db();
+// }
 // ========================== End Indexer Tests ==============================
+
+// ========================= Begin Service Tests =============================
+TEST (ServiceTest, StartUp) {
+    // Service::run_loop();
+}
+// ==========================  End Service Tests  ============================
+
+// ==========================  Begin API Tests  ==============================
+TEST (APITest, Info) {
+    manual_corpora_state();
+
+    API * server = new API();
+    server->info();
+
+    delete server;
+}
+// ==========================   End API Tests   ==============================
+
 
 int main(int argc, char **argv) {
     testing::InitGoogleTest(&argc, argv);

@@ -4,13 +4,12 @@
 #include <cctype>
 
 namespace TextProcessor {
-
     void stripUnicode(std::string & str) {
         str.erase(
             std::remove_if(
                 str.begin(),
                 str.end(),
-                [](char c){ return !(c >= 0 && c < 128 ); }
+                [](unsigned char c){ return !(static_cast<unsigned char>(c) < 128); }
             ),
             str.end()
         );

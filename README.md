@@ -16,24 +16,27 @@ A search engine to find relevant linux/package commands for a user's specified p
 
 ## External Libraries / Credits
 - [nlohmann/json](https://github.com/nlohmann/json): JSON Parsing
-- [GoogleTest](https://github.com/google/googletest) Unit Testing Framework
+- [sqlite3](https://github.com/sqlite/sqlite): Database
+- [GoogleTest](https://github.com/google/googletest): Unit Testing Framework
+- [ArgParse](https://github.com/p-ranav/argparse): Argument Parsing
+- [Mailbox](https://github.com/matthambreht/Mailbox): Interprocess Communication (IPC)
 
 ## Upcoming Features
 ### Release TODO List
 - [X] Switch from Embedding Model to Traditional BM25 Search
-- [ ] Integrate BM25 from Scratch
+- [X] Integrate BM25 from Scratch
 - [X] Remove Python Webserver
 - [X] Move over to SQLite from Postgres
 - [X] Clean up Install Script
-- [ ] Bulk DB Document Updating (Slow as heck currently )
+- [X] Bulk DB Document Updating (Slow as heck currently)
 - [ ] Clean up Unit Testing
 - [ ] Fix SQLi Vulnerability
 - [ ] Setup Preprocessing Pipeline (Lemmatization, Synonym Replacement, etc.)
 - [ ] Handle Manpage Updates (Hash Checking)
 - [ ] Finish Core Functionality
+- [X] Create user program to interface with the API through pipes
 
 ### Later Version TODO
-- [ ] Create user program to interface with the API through pipes
 - [ ] Find a better place to get less technical descriptions of commands (No non-technical person looking to view a file is gonna search anything close to `cat - concatenate files and print on the standard output`")
 - [ ] Add Ncurses GUI for more user friendliness
 - [ ] Maybe move back towards AI/ML? Don't really want Python though, might need to do some Cuda tomfoolery to get even more accurate results
