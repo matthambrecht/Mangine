@@ -8,8 +8,8 @@
 #include <cstdio>
 
 #include "Document.h"
-#include "../libs/json.hpp"
-#include "../pipeline/TextProcessor.h"
+#include "../include/json.hpp"
+#include "../indexer/TextProcessor.h"
 #include "../utils/Config.h"
 #include "../utils/Log.h"
 
